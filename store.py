@@ -152,7 +152,7 @@ class CalibrationStore:
         """
         # NOTE: Change how this works if result = selector.select() is not a string, or implement in _get_calibration
         input = datamodels.open(input, meta_only=True)
-        result = selector.select(input, self.local_db, self.orm_class, **kwargs)
+        result = selector.select(input, self.local_db, **kwargs)
         return self._get_calibration(result, use_cached=use_cached)
 
     def download_calibration(self, calibration):
