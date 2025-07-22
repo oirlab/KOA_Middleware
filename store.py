@@ -6,60 +6,7 @@ from .database import RemoteCalibrationDB
 
 from hispecdrp import datamodels
 
-__all__ = ['get_calibration_store', 'CalibrationStore']
-
-def get_calibration_store(
-    input_model : datamodels.HISPECDataModel | str | None = None,
-    instrument : str | None = None,
-    cache_dir : str | None = None,
-    database_filename : str | None = None,
-) -> 'CalibrationStore':
-    """
-    Retrieve an instance of the CalibrationStore. Specify either an input model (HISPECDataModel or PARVICalibrationModel) or the instrument name ('hispec' or 'parvi').
-
-    Args:
-        input_model: An instance of HISPECDataModel or PARVICalibrationModel, or filepath. Defaults to None.
-        instrument: A string indicating the instrument ('hispec' or 'parvi').  Defaults to None.
-        cache_dir: Directory path for local calibration file cache.
-        database_filename: Local filename for SQLite calibration database.
-    """
-    if input_model is not None:
-        input_model = datamodels.open(input_model, meta_only=True)
-        if isinstance(input_model, datamodels.HISPECDataModel):
-            orm_class = HISPECCalibrationORM
-            default_db_filename = 'hispec_calibrations.db'
-        elif isinstance(input_model, datamodels.PARVIDataModel):
-            orm_class = PARVICalibrationORM
-            default_db_filename = 'parvi_calibrations.db'
-        else:
-            raise ValueError(f"Unknown input model type: {type(input_model)}. Expected HISPECCalibrationModel or PARVICalibrationModel.")
-    elif instrument is not None:
-        if instrument.lower() == 'hispec':
-            orm_class = HISPECCalibrationORM
-            default_db_filename = 'hispec_calibrations.db'
-        elif instrument.lower() == 'parvi':
-            orm_class = PARVICalibrationORM
-            default_db_filename = 'parvi_calibrations.db'
-        else:
-            raise ValueError(f"Unknown instrument: {instrument}")
-    else:
-        raise ValueError("Either input_model or instrument must be provided to get_calibration_store.")
-
-    # Resolve cache_dir and database_filename
-    resolved_cache_dir = cache_dir or os.environ.get('HISPECDRP_CALIBRATION_CACHE')
-    if resolved_cache_dir is None:
-        raise ValueError("cache_dir must be provided or set in HISPECDRP_CALIBRATION_CACHE environment variable.")
-
-    resolved_database_filename = database_filename or os.environ.get('HISPECDRP_CALIBRATION_DATABASE_FILENAME', default_db_filename)
-
-    return CalibrationStore(
-        remote_database_url=os.environ.get('HISPECDRP_CALIBRATION_DATABASE_URL', None),
-        remote_calibration_url=os.environ.get('HISPECDRP_CALIBRATION_URL', None),
-        cache_dir=resolved_cache_dir,
-        orm_class=orm_class,
-        local_database_filename=resolved_database_filename,
-    )
-
+__all__ = ['CalibrationStore']
 
 
 class CalibrationStore:
@@ -84,26 +31,53 @@ class CalibrationStore:
 
     def __init__(
         self,
+        input_model : datamodels.HISPECDataModel | str | None = None,
+        instrument : str | None = None,
+        cache_dir : str | None = None,
+        local_database_filename : str | None = None,
         remote_database_url : str | None = None,
         remote_calibration_url : str | None = None,
-        cache_dir : str | None = None,
         orm_class : type | None = None,
-        local_database_filename : str | None = None,
     ):
-        
-        # ORM class for queries
+        if input_model is not None:
+            input_model = datamodels.open(input_model, meta_only=True)
+            if isinstance(input_model, datamodels.HISPECDataModel):
+                orm_class = HISPECCalibrationORM
+                default_db_filename = 'hispec_calibrations.db'
+            elif isinstance(input_model, datamodels.PARVIDataModel):
+                orm_class = PARVICalibrationORM
+                default_db_filename = 'parvi_calibrations.db'
+            else:
+                raise ValueError(f"Unknown input model type: {type(input_model)}. Expected HISPECCalibrationModel or PARVICalibrationModel.")
+        elif instrument is not None:
+            if instrument.lower() == 'hispec':
+                orm_class = HISPECCalibrationORM
+                default_db_filename = 'hispec_calibrations.db'
+            elif instrument.lower() == 'parvi':
+                orm_class = PARVICalibrationORM
+                default_db_filename = 'parvi_calibrations.db'
+            else:
+                raise ValueError(f"Unknown instrument: {instrument}")
+        else:
+            raise ValueError("Either input_model or instrument must be provided.")
+
+        cache_dir = cache_dir or os.environ.get('HISPECDRP_CALIBRATION_CACHE')
+        if cache_dir is None:
+            raise ValueError("cache_dir must be provided or set in HISPECDRP_CALIBRATION_CACHE environment variable.")
+
+        local_database_filename = local_database_filename or os.environ.get('HISPECDRP_CALIBRATION_DATABASE_FILENAME', default_db_filename)
+
         self.orm_class = orm_class
 
-        # URL where actual calibrations (FITS files) are stored
         if remote_calibration_url is None:
             self.calibration_url = os.environ.get('HISPECDRP_CALIBRATION_URL', self._DEFAULT_HISPECDRP_CALIBRATION_URL)
         else:
             self.calibration_url = remote_calibration_url
 
-        # Init the local cache
         self.init_cache(cache_dir, local_database_filename)
 
-        # Initialize the database
+        if remote_database_url is None:
+            remote_database_url = os.environ.get('HISPECDRP_CALIBRATION_DATABASE_URL', self._DEFAULT_HISPECDRP_CALIBRATION_DATABASE_URL)
         self.init_remote_db(remote_database_url)
 
     def init_cache(self, cache_dir : str | None = None, local_database_filename : str | None = None):
@@ -216,3 +190,16 @@ class CalibrationStore:
         Utility method to update the local SQLite DB from pre-existing calibrations in the cache directory.
         """
         return self.local_db.update_from_cache(self.cache_dir)
+    
+
+    def __enter__(self):
+        """
+        Context manager entry method.
+        """
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Context manager exit method.
+        """
+        self.close()
