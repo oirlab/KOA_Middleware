@@ -83,7 +83,17 @@ class CalibrationStore:
         else:
             self.remote_db = None
 
-    def _get_calibration(self, calibration, use_cached : bool | None = None) -> str:
+    def _get_calibration(self, calibration : CalibrationORM, use_cached : bool | None = None) -> str:
+        """
+        Get the calibration file based on its ORM instance. Download if not already cached.
+
+        Args:
+            calibration (CalibrationORM): The ORM instance representing the calibration.
+            use_cached (bool | None): If True, return the cached calibration if available. If False, always download from remote even if already cached. If None, defaults to self.use_cached.
+
+        Returns:
+            str: The local file path of the calibration file.
+        """
         filepath_local = self.calibration_in_cache(calibration)
         if use_cached is None:
             use_cached = self.use_cached
@@ -104,42 +114,74 @@ class CalibrationStore:
         
         Args:
             input: Input data product.
-            selector: A CalibrationSelector instance that defines the selection rule.
-            use_cached: If True, return the cached calibration if available.
+            selector (CalibrationSelector): A CalibrationSelector instance that defines the selection rule.
+            use_cached (bool | None): If True, return the cached calibration if available.
             kwargs: Additional parameters to pass to Selector.select().
         
         Returns:
-            Selected calibration file(s).
+            str: Selected calibration file(s).
         """
         result = selector.select(input, self.local_db, **kwargs)
         return self._get_calibration(result, use_cached=use_cached)
 
-    def download_calibration(self, calibration):
-       # NOTE: Implement this once we are set up at Keck or KOA.
-       raise NotImplementedError("Download calibration not implemented yet.")
+    def download_calibration(self, calibration : CalibrationORM) -> str:
+        """
+        Download the calibration from the remote URL (*under development*).
+
+        Args:
+            calibration (CalibrationORM): The ORM instance representing the calibration to download.
+
+        Returns:
+            str: The local file path of the downloaded calibration file.
+        """
+        # NOTE: Implement this once we are set up at Keck or KOA.
+        raise NotImplementedError("Download calibration not implemented yet.")
     
-    def calibration_in_cache(self, calibration) -> str | None:
-        filepath_local = self.get_local_filename(calibration)
+    def calibration_in_cache(self, calibration : CalibrationORM) -> str | None:
+        """
+        Check if the calibration file is already cached locally.
+
+        Args:
+            calibration (CalibrationORM): The ORM instance to check.
+
+        Returns:
+            str | None: The local file path if the calibration is cached, otherwise None.
+        """
+        filepath_local = self.get_local_filepath(calibration)
         if os.path.exists(filepath_local):
             return filepath_local
         else:
-            return None
+            return False
     
-    def get_local_filename(self, calibration) -> str:
+    def get_local_filepath(self, calibration) -> str:
+        """
+        Get the local filepath of a calibration ORM object.
+
+        Args:
+            calibration (CalibrationORM): The ORM instance.
+
+        Returns:
+            str: The local file path of the calibration.
+        """
         return os.path.join(self.cache_dir, 'calibrations', calibration.filename)
     
     def close(self):
         """
-        Close both databases.
+        Close both databases by calling engine.dipose() on the local and remote DB.
         """
         if self.remote_db is not None:
             self.remote_db.close()
         if self.local_db is not None:
             self.local_db.close()
     
-    def get_missing_local_entries(self) -> list:
+    def get_missing_local_entries(self) -> list[CalibrationORM]:
         """
-        Get missing local entries based on LAST_UPDATED.
+        Identify entries in the remote DB that are missing from the local DB, 
+        using the LAST_UPDATED field as a reference.
+        *under development*
+
+        Returns:
+            list[CalibrationORM]: List of missing CalibrationORM objects.
         """
         # NOTE: Need to test this method once formal remote DB is configured.
         last_updated_local = self.local_db.get_last_updated()
@@ -148,22 +190,30 @@ class CalibrationStore:
         )
         return calibrations
 
-    def register_local_calibration(self, calibration):
+    def register_local_calibration(self, calibration) -> CalibrationORM:
         """
-        Register a calibration that is now stored in the appropriate calibrations directory and add to the local SQLLite DB.
+        Register a calibration that is now stored in the appropriate calibrations directory by adding it to the local SQLLite DB.
+        
+        NOTE: This method is responsible for calling ``model.save()``, so we must consider the input being a datamodel. Consider alternative approach.
+
+        Args:
+            calibration (DataModel): The calibration object to register.
+
+        Returns:
+            CalibrationORM: The ORM instance representing the registered calibration.
         """
         output_dir = os.path.join(self.cache_dir, 'calibrations') + os.sep
         calibration.save(output_dir=output_dir)
         cal_orm = self.orm_class.from_datamodel(calibration)
         return self.local_db.add(cal_orm)
     
-    def sync_from_remote(self) -> list:
+    def sync_from_remote(self) -> list[CalibrationORM]:
         """
         Download entries present in the remote DB which are missing from the local DB based on LAST_UPDATED.
+        *under development*
         """
-        calibrations = self.get_missing_entries()
-        calibrations = [cal for cal in calibrations if cal is not None]
-        if calibrations:
+        calibrations = self.get_missing_local_entries()
+        if len(calibrations) > 0:
             self.local_db.add(calibrations)
         return calibrations
     
