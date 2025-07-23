@@ -19,3 +19,12 @@ class CalibrationORM:
     @classmethod
     def from_datamodel(cls, *args, **kwargs) -> 'CalibrationORM':
         raise NotImplementedError(f"Method from_datamodel not implemented by class {cls}.")
+    
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        name = cls.__name__
+        suffix = "CalibrationORM"
+        if suffix in name:
+            cls.instrument = name[:name.find(suffix)].lower()
+        else:
+            cls.instrument = None

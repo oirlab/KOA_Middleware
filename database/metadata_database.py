@@ -6,7 +6,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 import datetime
 from .orm_base import CalibrationORM
-from hispecdrp import datamodels
 
 __all__ = ['CalibrationDB']
 
@@ -80,8 +79,7 @@ class CalibrationDB:
 
     def add(
         self,
-        calibration : CalibrationORM | datamodels.HISPECCalibrationModel | str | list,
-        note : str | None = None,
+        calibration : CalibrationORM | list[CalibrationORM],
         session : Session | None = None,
         commit : bool = True,
     ):
@@ -92,12 +90,7 @@ class CalibrationDB:
             calibration = [calibration]
         with self.session_manager(session) as session:
             for item in calibration:
-                if isinstance(item, (str, datamodels.HISPECCalibrationModel, datamodels.PARVICalibrationModel)):
-                    cal_model = datamodels.open(item, meta_only=True)
-                    obj = self.orm_class.from_datamodel(cal_model, note=note)
-                else:
-                    obj = item
-                session.merge(obj)
+                session.merge(item)
             if commit:
                 session.commit()
 

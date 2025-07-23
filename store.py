@@ -1,10 +1,6 @@
 import os
-from hispecdrp.calibrations import HISPECCalibrationORM, PARVICalibrationORM
 from .selector_base import CalibrationSelector
-from .database import LocalCalibrationDB
-from .database import RemoteCalibrationDB
-
-from hispecdrp import datamodels
+from .database import LocalCalibrationDB, RemoteCalibrationDB, CalibrationORM
 
 __all__ = ['CalibrationStore']
 
@@ -14,74 +10,66 @@ class CalibrationStore:
     A CalibrationStore is used to manage storing, and retrieving calibrations.
     """
 
-    _DEFAULT_HISPECDRP_CALIBRATION_DATABASE_URL = None # NOTE: Eventually change KOA PostgreSQL URL
-    _DEFAULT_HISPECDRP_CALIBRATION_URL = None # NOTE: Eventually change KOA URL = "https://koa.ipac.caltech.edu/cgi-bin/getKOA/nph-getKOA?return_mode=json&"
+    _DEFAULT_KOA_CALIBRATION_DATABASE_URL = None # NOTE: Eventually change KOA PostgreSQL URL
+    _DEFAULT_KOA_CALIBRATION_URL = None # NOTE: Eventually change KOA URL = "https://koa.ipac.caltech.edu/cgi-bin/getKOA/nph-getKOA?return_mode=json&
     
     # ENV VARS
-    # HISPECDRP_CALIBRATION_CACHE
+    # KOA_CALIBRATION_CACHE
     #     REQUIRED: Path to top level directory for downloaded calibrations.
-    # HISPECDRP_CALIBRATION_DATABASE_FILENAME
-    #     OPTIONAL: Name of the local SQLite database file. Default is 'hispec_calibrations.db' for HISPEC and 'parvi_calibrations.db' for PARVI.
-    # HISPECDRP_CALIBRATION_DATABASE_URL
+    # KOA_LOCAL_DATABASE_FILENAME
+    #     OPTIONAL: Name of the local SQLite database file. Default is 'orm_class.hispec_calibrations.db' for HISPEC and 'parvi_calibrations.db' for PARVI.
+    # KOA_REMOTE_DATABASE_URL
     #     OPTIONAL: PostgreSQL URL for the remote database. Set to None for only local operations including PARVI.
-    #     Default is None for now, eventually KOA once deployed.
-    # HISPECDRP_CALIBRATION_URL
+    #     Default is None for now, eventually KOA URL once deployed.
+    # KOA_CALIBRATION_URL
     #     OPTIONAL: URL where actual calibrations (FITS files) are stored. Set to None for only local operations including PARVI.
     #     Default is None for now, eventually KOA once deployed.
 
     def __init__(
         self,
-        input_model : datamodels.HISPECDataModel | str | None = None,
-        instrument : str | None = None,
+        orm_class : type[CalibrationORM],
         cache_dir : str | None = None,
         local_database_filename : str | None = None,
         remote_database_url : str | None = None,
-        remote_calibration_url : str | None = None,
-        orm_class : type | None = None,
+        calibrations_url : str | None = None,
+        use_cached : bool | None = None
     ):
-        if input_model is not None:
-            input_model = datamodels.open(input_model, meta_only=True)
-            if isinstance(input_model, datamodels.HISPECDataModel):
-                orm_class = HISPECCalibrationORM
-                default_db_filename = 'hispec_calibrations.db'
-            elif isinstance(input_model, datamodels.PARVIDataModel):
-                orm_class = PARVICalibrationORM
-                default_db_filename = 'parvi_calibrations.db'
-            else:
-                raise ValueError(f"Unknown input model type: {type(input_model)}. Expected HISPECCalibrationModel or PARVICalibrationModel.")
-        elif instrument is not None:
-            if instrument.lower() == 'hispec':
-                orm_class = HISPECCalibrationORM
-                default_db_filename = 'hispec_calibrations.db'
-            elif instrument.lower() == 'parvi':
-                orm_class = PARVICalibrationORM
-                default_db_filename = 'parvi_calibrations.db'
-            else:
-                raise ValueError(f"Unknown instrument: {instrument}")
-        else:
-            raise ValueError("Either input_model or instrument must be provided.")
+        """
+        Initialize the CalibrationStore.
 
-        cache_dir = cache_dir or os.environ.get('HISPECDRP_CALIBRATION_CACHE')
-        if cache_dir is None:
-            raise ValueError("cache_dir must be provided or set in HISPECDRP_CALIBRATION_CACHE environment variable.")
-
-        local_database_filename = local_database_filename or os.environ.get('HISPECDRP_CALIBRATION_DATABASE_FILENAME', default_db_filename)
-
+        Args:
+            orm_class (type[ORMCalibration]): The ORM class to use for SQL queries.
+            cache_dir (str | None): Directory to store cached calibrations. If None, uses the KOA_CALIBRATION_CACHE environment variable.
+            local_database_filename (str | None): Name of the local SQLite database file. If None, uses KOA_LOCAL_DATABASE_FILENAME environment variable.
+            use_cached (bool | None): If True, use cached calibrations if available. If False, always download from remote even if already cached. If None, defaults to the ENV var KOA_USE_CACHED_CALIBRATIONS. If not set, defaults to True.
+        """
         self.orm_class = orm_class
 
-        if remote_calibration_url is None:
-            self.calibration_url = os.environ.get('HISPECDRP_CALIBRATION_URL', self._DEFAULT_HISPECDRP_CALIBRATION_URL)
+        if use_cached is not None:
+            self.use_cached = use_cached
         else:
-            self.calibration_url = remote_calibration_url
+            self.use_cached = os.environ.get('KOA_USE_CACHED_CALIBRATIONS', 'true').lower() != 'false'
+        
+        if cache_dir is not None:
+            self.cache_dir = cache_dir
+        else:
+            self.cache_dir = os.environ.get('KOA_CALIBRATION_CACHE', None)
+            assert self.cache_dir is not None, "KOA_CALIBRATION_CACHE environment variable must be set to a valid directory path."
+        
+        if calibrations_url is not None:
+            self.calibrations_url = calibrations_url
+        else:
+            self.calibrations_url = os.environ.get('KOA_CALIBRATION_URL', self._DEFAULT_KOA_CALIBRATION_URL)
 
-        self.init_cache(cache_dir, local_database_filename)
-
-        if remote_database_url is None:
-            remote_database_url = os.environ.get('HISPECDRP_CALIBRATION_DATABASE_URL', self._DEFAULT_HISPECDRP_CALIBRATION_DATABASE_URL)
+        self.init_cache(local_database_filename)
         self.init_remote_db(remote_database_url)
 
-    def init_cache(self, cache_dir : str | None = None, local_database_filename : str | None = None):
-        self.cache_dir = cache_dir if cache_dir is not None else os.environ['HISPECDRP_CALIBRATION_CACHE']
+    def init_cache(self, local_database_filename : str | None = None):
+        if local_database_filename is None:
+            local_database_filename = os.environ.get('KOA_LOCAL_DATABASE_FILENAME')
+            if local_database_filename is None:
+                assert self.orm_class.instrument is not None, "ORM class must have an instrument attribute set."
+                local_database_filename = f'{self.orm_class.instrument.lower()}_calibrations.db'
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(os.path.join(self.cache_dir, 'calibrations'), exist_ok=True)
         os.makedirs(os.path.join(self.cache_dir, 'database'), exist_ok=True)
@@ -89,17 +77,16 @@ class CalibrationStore:
         self.local_db = LocalCalibrationDB(db_path=local_db_filepath, orm_class=self.orm_class)
 
     def init_remote_db(self, remote_database_url : str | None = None):
-        if remote_database_url is not None:
-            remote_database_url = remote_database_url
-        else:
-            remote_database_url = os.environ.get('HISPECDRP_CALIBRATION_DATABASE_URL', self._DEFAULT_HISPECDRP_CALIBRATION_DATABASE_URL)
+        remote_database_url = os.environ.get('KOA_REMOTE_CALIBRATION_URL', self._DEFAULT_KOA_CALIBRATION_DATABASE_URL)
         if remote_database_url is not None:
             self.remote_db = RemoteCalibrationDB(url=remote_database_url)
         else:
             self.remote_db = None
 
-    def _get_calibration(self, calibration, use_cached : bool = True) -> str:
+    def _get_calibration(self, calibration, use_cached : bool | None = None) -> str:
         filepath_local = self.calibration_in_cache(calibration)
+        if use_cached is None:
+            use_cached = self.use_cached
         if filepath_local is not None and use_cached:
             return filepath_local
         else:
@@ -107,9 +94,9 @@ class CalibrationStore:
     
     def get_calibration(
         self,
-        input : str | datamodels.HISPECDataModel,
+        input,
         selector : CalibrationSelector,
-        use_cached : bool = True,
+        use_cached : bool | None = None,
         **kwargs
     ) -> str:
         """
@@ -124,8 +111,6 @@ class CalibrationStore:
         Returns:
             Selected calibration file(s).
         """
-        # NOTE: Change how this works if result = selector.select() is not a string, or implement in _get_calibration
-        input = datamodels.open(input, meta_only=True)
         result = selector.select(input, self.local_db, **kwargs)
         return self._get_calibration(result, use_cached=use_cached)
 
@@ -163,17 +148,14 @@ class CalibrationStore:
         )
         return calibrations
 
-    def register_local_calibration(
-        self,
-        calibration : datamodels.HISPECCalibrationModel | str,
-        note : str | None = None
-    ):
+    def register_local_calibration(self, calibration):
         """
         Register a calibration that is now stored in the appropriate calibrations directory and add to the local SQLLite DB.
         """
         output_dir = os.path.join(self.cache_dir, 'calibrations') + os.sep
         calibration.save(output_dir=output_dir)
-        return self.local_db.add(calibration, note=note)
+        cal_orm = self.orm_class.from_datamodel(calibration)
+        return self.local_db.add(cal_orm)
     
     def sync_from_remote(self) -> list:
         """
@@ -191,7 +173,6 @@ class CalibrationStore:
         """
         return self.local_db.update_from_cache(self.cache_dir)
     
-
     def __enter__(self):
         """
         Context manager entry method.
