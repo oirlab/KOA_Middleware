@@ -124,4 +124,17 @@ class CalibrationDB:
                 session.commit()
 
 
+    def query_by_id(self, calibration_id : str, session : Session | None = None) -> CalibrationORM | None:
+        """
+        Query a calibration by its ID.
 
+        Args:
+            calibration_id (str): The ID of the calibration to query.
+            session (Session | None): Optional SQLAlchemy session to use. If None, a new session will be created.
+
+        Returns:
+            list[CalibrationORM] | None: The calibration objects found by ID.
+        """
+
+        with self.session_manager(session) as session:
+            return session.query(self.orm_class).filter_by(id=calibration_id).all()

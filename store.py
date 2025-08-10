@@ -1,6 +1,7 @@
 import os
 from .selector_base import CalibrationSelector
 from .database import LocalCalibrationDB, RemoteCalibrationDB, CalibrationORM
+import warnings
 
 __all__ = ['CalibrationStore']
 
@@ -130,10 +131,13 @@ class CalibrationStore:
     def get_calibration_by_id(self, calibration_id : str) -> tuple[CalibrationORM, str]:
         with self.local_db.session_manager() as session:
             calibration = self.local_db.query_by_id(calibration_id, session=session)
-            if calibration is None:
+            if calibration is None or len(calibration) == 0:
                 raise ValueError(f"Calibration with ID {calibration_id} not found in local database.")
+            if len(calibration) > 1:
+                warnings.warn(f"Multiple calibrations found with ID {calibration_id}, returning first found.")
+            calibration = calibration[0]
             local_filepath = self._get_calibration(calibration)
-            return calibration, local_filepath
+            return local_filepath, calibration
             
 
     def download_calibration(self, calibration : CalibrationORM) -> str:
@@ -228,12 +232,6 @@ class CalibrationStore:
         if len(calibrations) > 0:
             self.local_db.add(calibrations)
         return calibrations
-    
-    def update_from_cache(self):
-        """
-        Utility method to update the local SQLite DB from pre-existing calibrations in the cache directory.
-        """
-        return self.local_db.update_from_cache(self.cache_dir)
     
     def __enter__(self):
         """
