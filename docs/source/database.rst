@@ -11,23 +11,21 @@ The database columns are declared in a standard Python class with additional met
 
 *Note the minimum requirement will likely change as these protocols are further developed.*
 
+Below is a simple example for creating a new ORM for an instrument called `MyInstrument` (e.g. HISPEC).
+
 .. code-block:: python
 
    from sqlalchemy.orm import Mapped
    from sqlalchemy.orm import mapped_column
-   from sqlalchemy import String, Float,  Boolean
+   from sqlalchemy import String, Float, Boolean
    from sqlalchemy.orm import declarative_base
    import uuid
-   import datetime
    from koa_middleware import CalibrationORM
    _Base = declarative_base()
 
-   # Generate a UUID for the namespace using a hash of the unique string
-   UUID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "HISPEC_DRP")
-
    class MyCalibrationORM(CalibrationORM, _Base):
       # Can be any valid table name
-      __tablename__ = "calibrations"
+      __tablename__ = "MyInstrument"
 
       # Unique identifier for the calibration
       id: Mapped[uuid.UUID] = mapped_column(String(36), primary_key=True)
@@ -36,7 +34,7 @@ The database columns are declared in a standard Python class with additional met
       koa_filepath: Mapped[str] = mapped_column(String(255), nullable=True)
 
       # When the calibration was inserted into the DB
-      last_updated: Mapped[str] = mapped_column(String(50), default=datetime.utcnow().isoformat(), nullable=False)
+      last_updated: Mapped[str] = mapped_column(String(50), nullable=False)
 
 
 Any number of other fields can be added to the ORM class.
@@ -61,16 +59,18 @@ Key methods:
 
    Retrieve the most recent last_updated timestamp.
 
+- :py:meth:`~koa_middleware.database.metadata_database.CalibrationDB.query_by_id`
+
+   Retrieve a calibration by its ID.
+
 
 Remote Database
 ---------------
 
 :py:class:`~koa_middleware.database.remote_database.RemoteCalibrationDB` is a subclass of :py:class:`~koa_middleware.database.metadata_database.CalibrationDB` for remote databases (e.g., PostgreSQL).
-No custom logic yet beyond initialization.
 
 
 Local Database
 --------------
 
 :py:class:`~koa_middleware.database.local_database.LocalCalibrationDB` is a subclass of :py:class:`~koa_middleware.database.metadata_database.CalibrationDB` for local SQLite databases.
-The local DB can also be instantiated from a local cache of calibration files without needing to be connected to a remote DB.
