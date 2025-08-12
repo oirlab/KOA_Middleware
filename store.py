@@ -219,9 +219,9 @@ class CalibrationStore:
             CalibrationORM: The ORM instance representing the registered calibration.
         """
         output_dir = os.path.join(self.cache_dir, 'calibrations') + os.sep
-        calibration.save(output_dir=output_dir)
+        local_filepath = calibration.save(output_dir=output_dir)
         cal_orm = calibration.to_orm()
-        return self.local_db.add(cal_orm)
+        return local_filepath, self.local_db.add(cal_orm)
     
     def sync_from_remote(self) -> list[CalibrationORM]:
         """
