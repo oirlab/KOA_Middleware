@@ -123,7 +123,6 @@ class CalibrationDB:
             if commit:
                 session.commit()
 
-
     def query_by_id(self, calibration_id : str, session : Session | None = None) -> CalibrationORM | None:
         """
         Query a calibration by its ID.
