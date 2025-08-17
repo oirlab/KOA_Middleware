@@ -46,7 +46,8 @@ classifiers = [
 
 dependencies = [
   "tqdm",
-  "sqlalchemy>2.0"
+  "sqlalchemy>2.0",
+  "requests",
 ]
 
 
