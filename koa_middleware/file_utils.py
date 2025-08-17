@@ -55,4 +55,4 @@ def generate_koa_id(instrument_prefix : str, date_obs : str = None, utc_obs : st
     utc = datetime.datetime.strptime(utc_obs, '%H:%M:%S.%f')
     total_seconds = utc.hour * 3600 + utc.minute * 60 + utc.second + utc.microsecond / 1e6
     seconds = f"{total_seconds:08.2f}"
-    return f"{instrument_prefix}.{date_obs}.{seconds}{ext}"
+    return f"{instrument_prefix}.{date_obs}.{seconds}.{ext}"
