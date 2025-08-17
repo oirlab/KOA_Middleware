@@ -13,8 +13,8 @@ import koa_middleware
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'KOA Middleware'
-copyright = '2025, HISPEC DRP Team'
-author = 'HISPEC DRP Team'
+copyright = '2025, OIRLab, UCSD'
+author = 'OIRLab, UCSD'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
