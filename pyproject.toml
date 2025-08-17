@@ -1,0 +1,70 @@
+# Guide (user-friendly):
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+
+# Specification (technical, formal):
+# https://packaging.python.org/en/latest/specifications/pyproject-toml/
+
+
+# Choosing a build backend:
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/#choosing-a-build-backend
+[build-system]
+requires = ["setuptools>=38.3.0", "wheel", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_file = "koa_middleware/_version.py"
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+
+
+[project]
+name = "koa_middleware"
+dynamic = ["version"]
+description = "Middleware for data pipelines to interface with the Keck Observatory Archive (KOA)."
+readme = "README.md"
+requires-python = ">=3.12.0"
+
+# license = {file = "LICENSE.txt"}
+
+authors = [
+  {name = "Bryson Cale", email = "brcale@ucsd.edu" },
+  {name = "Andrea Zonca", email = "azonca@ucsd.edu" }
+]
+
+maintainers = [
+  {name = "Bryson Cale", email = "brcale@ucsd.edu" },
+  {name = "Andrea Zonca", email = "azonca@ucsd.edu" }
+]
+
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  # "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+dependencies = [
+  "tqdm",
+  "sqlalchemy>2.0"
+]
+
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
+docs = ["sphinx==8.1.3", "nbsphinx", "sphinx-astropy", "pandoc", "sphinx-multiversion", "sphinxawesome-theme"]
+
+[project.urls]
+"Documentation" = "https://oirlab.github.io/KOA_Middleware/"
+"Source" = "https://github.com/oirlab/KOA_Middleware"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["koa_middleware*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
