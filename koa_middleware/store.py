@@ -132,7 +132,8 @@ class CalibrationStore:
         with self.local_db.session_manager() as session:
             calibration = self.local_db.query_by_id(calibration_id, session=session)
             if calibration is None or len(calibration) == 0:
-                raise ValueError(f"Calibration with ID {calibration_id} not found in local database.")
+                warnings.warn(f"No calibrations found with ID {calibration_id}, returning None")
+                return None, None
             if len(calibration) > 1:
                 warnings.warn(f"Multiple calibrations found with ID {calibration_id}, returning first found.")
             calibration = calibration[0]
