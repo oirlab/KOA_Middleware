@@ -69,3 +69,4 @@ namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["tests/calibration_orm_model.py"]
