@@ -1,0 +1,12 @@
+koa\_middleware.database.orm\_base
+==================================
+
+.. automodule:: koa_middleware.database.orm_base
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CalibrationORM
+   
