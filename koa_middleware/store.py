@@ -1,7 +1,9 @@
 import os
+import warnings
+
 from .selector_base import CalibrationSelector
 from .database import LocalCalibrationDB, RemoteCalibrationDB, CalibrationORM
-import warnings
+
 
 __all__ = ['CalibrationStore']
 
@@ -288,7 +290,6 @@ class CalibrationStore:
             local_filepath = self._get_calibration(calibration)
             return local_filepath, calibration
             
-
     def download_calibration(self, calibration : CalibrationORM) -> str:
         """
         Downloads a calibration file from the remote URL.
@@ -324,8 +325,8 @@ class CalibrationStore:
         if os.path.exists(filepath_local):
             return filepath_local
         else:
-            return None
-    
+            return False
+
     def get_local_filepath(self, calibration : CalibrationORM) -> str:
         """
         Constructs the expected local file path for a given calibration ORM object.
@@ -352,7 +353,7 @@ class CalibrationStore:
             self.remote_db.close()
         if self.local_db is not None:
             self.local_db.close()
-    
+
     def get_missing_local_entries(self) -> list[CalibrationORM]:
         """
         Identifies calibration entries present in the remote database but missing from the local database.
@@ -379,12 +380,9 @@ class CalibrationStore:
         )
         return calibrations
 
-    def register_local_calibration(self, calibration) -> tuple[str, CalibrationORM]:
+    def register_local_calibration(self, calibration : CalibrationORM) -> CalibrationORM:
         """
-        Registers a calibration that has been saved to the local calibrations directory.
-
-        This method takes a calibration object (expected to be a data model with a `save` method)
-        and adds its corresponding ORM instance to the local SQLite database.
+        Register a calibration that is now stored in the appropriate calibrations directory by adding it to the local SQLLite DB.
 
         Args:
             calibration: The calibration object to register. This object is expected to have
@@ -403,11 +401,7 @@ class CalibrationStore:
             its own saving to disk and conversion to an ORM object. Consider alternative
             approaches if this assumption changes.
         """
-        output_dir = os.path.join(self.cache_dir, 'calibrations') + os.sep
-        local_filepath = calibration.save(output_dir=output_dir)
-        cal_orm = calibration.to_orm()
-        self.local_db.add(cal_orm)
-        return local_filepath, cal_orm
+        return self.local_db.add(calibration)
     
     def sync_from_remote(self) -> list[CalibrationORM]:
         """
