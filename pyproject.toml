@@ -68,4 +68,5 @@ include = ["koa_middleware*"]
 namespaces = false
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "docs/source/quickstart.ipynb"]
+addopts = "--nbval"
