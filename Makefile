@@ -2,6 +2,13 @@
 
 .PHONY: all help docs test install clean
 
+# Check for uv and set PYTHON_RUNNER accordingly
+ifeq ($(shell command -v uv 2>/dev/null),)
+    PYTHON_RUNNER = python -m
+else
+    PYTHON_RUNNER = uv
+endif
+
 # Default target
 all: help
 
@@ -15,15 +22,15 @@ help:
 
 docs:
 	@echo "Building HTML documentation..."
-	@uv run make -C docs html
+	@$(PYTHON_RUNNER) make -C docs html
 
 test:
 	@echo "Running tests..."
-	@uv run pytest
+	@$(PYTHON_RUNNER) pytest
 
 install:
 	@echo "Installing project dependencies..."
-	@uv pip install .[test,docs]
+	@$(PYTHON_RUNNER) pip install .[test,docs]
 
 clean:
 	@echo "Cleaning build artifacts and Python caches..."
