@@ -28,6 +28,10 @@ jobs:
     - name: Update setuptools and wheel
       run: |
           python -m pip install --upgrade pip setuptools wheel
+    - name: Install Pandoc
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
     - name: Install the package with docs dependencies
       run: |
         pip install .[docs]
