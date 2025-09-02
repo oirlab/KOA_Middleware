@@ -52,7 +52,7 @@ dependencies = [
 
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pytest-nbval"]
+test = ["pytest", "pytest-cov", "pytest-notebook"]
 docs = ["sphinx==8.1.3", "nbsphinx", "sphinx-astropy", "pandoc", "sphinx-multiversion", "sphinxawesome-theme"]
 
 [project.urls]
@@ -69,4 +69,4 @@ namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "docs/source/quickstart.ipynb"]
-addopts = "--nbval"
+
