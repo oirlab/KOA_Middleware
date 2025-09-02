@@ -24,14 +24,5 @@ class CalibrationORM:
         return {col.name: getattr(self, col.name) for col in self.__table__.columns}
 
     def __repr__(self):
-        """
-        Returns a string representation of the ORM object.
-
-        This representation includes the class name and a formatted list of all
-        column names and their corresponding values, making it useful for debugging.
-
-        Returns:
-            str: A string representation of the ORM object.
-        """
         fields = '\n'.join(f"  {col.name}: {getattr(self, col.name)}" for col in self.__table__.columns)
         return f"{self.__class__.__name__}\n{fields}"
