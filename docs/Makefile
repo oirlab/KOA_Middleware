@@ -7,7 +7,7 @@ SPHINXOPTS    ?=
 
 # Check for uv and set SPHINXBUILD accordingly
 ifeq ($(shell command -v uv 2>/dev/null),)
-    SPHINXBUILD   ?= python -m sphinx_build
+    SPHINXBUILD   ?= python -m sphinx.cmd.build
 else
     SPHINXBUILD   ?= uv run sphinx-build
 endif
