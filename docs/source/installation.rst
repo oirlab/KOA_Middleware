@@ -36,7 +36,7 @@ Development Environment Setup
 
     .. code-block:: bash
 
-        uv pip install -e .[test,docs]
+        uv pip install -e ".[test,docs]"
 
     This command installs the package in editable mode (`-e`), which means any changes you make to the source code will be immediately reflected without needing to reinstall. It also includes the `test` and `docs` optional dependencies.
 
