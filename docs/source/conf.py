@@ -50,6 +50,8 @@ html_css_files = [
     'custom.css'
 ]
 
+nbsphinx_execute = 'never'
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 # https://sphinxawesome.xyz/how-to/configure/

@@ -4,7 +4,13 @@
 # You can set these variables from the command line, and also
 # from the environment for the first two.
 SPHINXOPTS    ?=
-SPHINXBUILD   ?= sphinx-build
+
+# Check for uv and set SPHINXBUILD accordingly
+ifeq ($(shell command -v uv 2>/dev/null),)
+    SPHINXBUILD   ?= python -m sphinx.cmd.build
+else
+    SPHINXBUILD   ?= uv run sphinx-build
+endif
 SOURCEDIR     = source
 BUILDDIR      = build
 
