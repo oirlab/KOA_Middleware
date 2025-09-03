@@ -1,35 +1,10 @@
-import os
 import pytest
 import datetime
 import uuid
-from pathlib import Path
 
 from koa_middleware.store import CalibrationStore
 from .calibration_orm_model import CalibrationTestORM
 from .test_selectors import TestDarkSelector
-
-@pytest.fixture
-def in_memory_calibration_store():
-    """
-    Fixture for an in-memory CalibrationStore.
-    """
-    # Create a dummy cache directory for the store, though it won't be used for in-memory DB
-    cache_dir = Path("/tmp/koa_middleware_test_cache")
-    cache_dir.mkdir(parents=True, exist_ok=True)
-
-    # Initialize CalibrationStore with in-memory SQLite
-    store = CalibrationStore(
-        orm_class=CalibrationTestORM,
-        cache_dir=str(cache_dir),
-        local_database_filename=":memory:",
-        remote_database_url=None, # Ensure no remote connection
-        calibrations_url=None # Ensure no remote connection
-    )
-    yield store
-    # Clean up the dummy cache directory after the test
-    store.close()
-    import shutil
-    shutil.rmtree(cache_dir)
 
 def test_minimal_koa_middleware_integration(in_memory_calibration_store):
     """
