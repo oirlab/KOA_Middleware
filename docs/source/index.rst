@@ -7,7 +7,7 @@ The KOA Middleware package specifies a common interface for data pipelines to co
 Purpose and Overview
 ====================
 
-The KOA Middleware is designed to streamline the interaction between data reduction pipelines (DRPs) and the Keck Observatory Archive (KOA). Its primary purpose is to provide a robust and standardized way to:
+The KOA Middleware is designed to streamline the interaction between DRPs and the Keck Observatory Archive (KOA). Its primary purpose is to provide a robust and standardized way to:
 
 *   **Manage Calibration Data:** Efficiently store, retrieve, and synchronize calibration files from both local and remote databases.
 *   **Abstract Database Interactions:** Offer a unified interface for interacting with various calibration databases (e.g., SQLite for local, PostgreSQL for remote).
