@@ -1,0 +1,13 @@
+﻿koa\_middleware.file\_utils
+===========================
+
+.. automodule:: koa_middleware.file_utils
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate_koa_filepath
+      generate_koa_id
+   

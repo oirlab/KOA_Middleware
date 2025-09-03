@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en"
+      data-content_root="../../"
+      x-data="{ darkMode: localStorage.getItem('darkMode') || localStorage.setItem('darkMode', 'system'), activeSection: '' }"
+      x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))"
+      class="scroll-smooth"
+      :class="{'dark': darkMode === 'dark' || (darkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)}"
+>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="white" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="black" />
+  
+    <title>koa_middleware.store | KOA Middleware  documentation</title>
+    <meta property="og:title" content="koa_middleware.store | KOA Middleware  documentation" />
+    <meta name="twitter:title" content="koa_middleware.store | KOA Middleware  documentation" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4844b59d" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme.css?v=42baaae4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=8526d40f" />
+    <link rel="canonical" href="https://oirlab.github.io/koa_middleware/_modules/koa_middleware/store.html" />
+        <link rel="search" title="Search" href="../../search.html" />
+        <link rel="index" title="Index" href="../../genindex.html" />
+
+    <script>
+    <!-- Prevent Flash of wrong theme -->
+      const userPreference = localStorage.getItem('darkMode');
+      let mode;
+      if (userPreference === 'dark' || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        mode = 'dark';
+        document.documentElement.classList.add('dark');
+      } else {
+        mode = 'light';
+      }
+      if (!userPreference) {localStorage.setItem('darkMode', mode)}
+    </script>
+</head>
+  <body x-data="{ showSidebar: false, showScrollTop: false }" class="min-h-screen font-sans antialiased bg-background text-foreground" :class="{ 'overflow-hidden': showSidebar }">
+    <div x-cloak x-show="showSidebar" class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden" @click.self="showSidebar = false"></div><div id="page" class="relative flex flex-col min-h-screen"><a href="#content" class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100">
+      Skip to content
+    </a><header
+  class="sticky top-0 z-40 w-full border-b shadow-sm border-border supports-backdrop-blur:bg-background/60 bg-background/95 backdrop-blur"><div class="container flex items-center h-14">
+    <div class="hidden mr-4 md:flex">
+      <a href="../../index.html" class="flex items-center mr-6"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">KOA Middleware  documentation</span>
+      </a></div><button
+      class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden"
+      type="button" @click="showSidebar = true">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" aria-hidden="true"
+        fill="currentColor">
+        <path
+          d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z" />
+      </svg>
+      <span class="sr-only">Toggle navigation menu</span>
+    </button>
+    <div class="flex items-center justify-between flex-1 space-x-2 sm:space-x-4 md:justify-end">
+      <div class="flex-1 w-full md:w-auto md:flex-none"><form id="searchbox"
+      action="../../search.html"
+      method="get"
+      class="relative flex items-center group"
+      @keydown.k.window.meta="$refs.search.focus()">
+  <input x-ref="search"
+          name="q"
+          id="search-input"
+          type="search"
+          aria-label="Search the docs"
+          placeholder="Search ..."
+          class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" />
+  <kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
+    <span class="text-xs">⌘</span>
+    K
+  </kbd>
+</form>
+      </div>
+      <nav class="flex items-center space-x-1">
+        <button @click="darkMode = darkMode === 'light' ? 'dark' : 'light'"
+          class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          type="button"
+          aria-label="Color theme switcher">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0">
+            <path
+              d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z" />
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" fill="currentColor"
+            class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100">
+            <path
+              d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z" />
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+    <div class="flex-1"><div class="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside id="left-sidebar"
+  class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full shrink-0 overflow-y-auto border-r border-border md:sticky"
+  :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }">
+
+    <a href="../../index.html" class="!justify-start text-sm md:!hidden bg-background"><span class="font-bold text-clip whitespace-nowrap">KOA Middleware  documentation</span>
+    </a>
+
+    <div class="relative overflow-hidden md:overflow-auto my-4 md:my-0 h-[calc(100vh-8rem)] md:h-auto">
+      <div class="overflow-y-auto h-full w-full relative pr-6"><nav class="table w-full min-w-full my-6 lg:my-8">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../store.html">Calibration Store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../database.html">Calibration Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../selectors.html">Calibration Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/api.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.store.html">koa_middleware.store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.database.local_database.html">koa_middleware.database.local_database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.database.metadata_database.html">koa_middleware.database.metadata_database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.database.orm_base.html">koa_middleware.database.orm_base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.database.remote_database.html">koa_middleware.database.remote_database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.selector_base.html">koa_middleware.selector_base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.file_utils.html">koa_middleware.file_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/generated/koa_middleware.download.html">koa_middleware.download</a></li>
+</ul>
+</li>
+</ul>
+
+</nav>
+      </div>
+    </div>
+    <button type="button" @click="showSidebar = false"
+      class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 96 960 960" fill="currentColor"
+        stroke="none" class="h-4 w-4">
+        <path
+          d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z" />
+      </svg>
+    </button>
+  </aside>
+        <main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
+<div class="w-full min-w-0 mx-auto">
+<nav aria-label="breadcrumbs"
+     class="flex items-center mb-4 space-x-1 text-sm text-muted-foreground">
+  <a class="overflow-hidden text-ellipsis whitespace-nowrap hover:text-foreground"
+     href="../../index.html">
+    <span class="hidden md:inline">KOA Middleware  documentation</span>
+    <svg xmlns="http://www.w3.org/2000/svg"
+         height="18"
+         width="18"
+         viewBox="0 96 960 960"
+         aria-label="Home"
+         fill="currentColor"
+         stroke="none"
+         class="md:hidden">
+      <path d="M240 856h120V616h240v240h120V496L480 316 240 496v360Zm-80 80V456l320-240 320 240v480H520V696h-80v240H160Zm320-350Z" />
+    </svg>
+  </a>
+  
+<div class="mr-1">/</div><a class="hover:text-foreground overflow-hidden text-ellipsis whitespace-nowrap"
+       href="../index.html">Module code</a>
+    
+<div class="mr-1">/</div><span aria-current="page"
+        class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">koa_middleware.store</span>
+</nav>
+
+    <div id="content" role="main">
+      <h1>Source code for koa_middleware.store</h1><div class="highlight"><pre>
+<span></span><code><span id="line-1"><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="line-2"><span class="kn">from</span><span class="w"> </span><span class="nn">.selector_base</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalibrationSelector</span>
+</span><span id="line-3"><span class="kn">from</span><span class="w"> </span><span class="nn">.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalCalibrationDB</span><span class="p">,</span> <span class="n">RemoteCalibrationDB</span><span class="p">,</span> <span class="n">CalibrationORM</span>
+</span><span id="line-4"><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span id="line-5">
+</span><span id="line-6"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CalibrationStore&#39;</span><span class="p">]</span>
+</span><span id="line-7">
+</span><span id="line-8">
+<div class="viewcode-block" id="CalibrationStore">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore">[docs]</a>
+</span><span id="line-9"><span class="k">class</span><span class="w"> </span><span class="nc">CalibrationStore</span><span class="p">:</span>
+</span><span id="line-10"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-11"><span class="sd">    Manages the storage, retrieval, and synchronization of calibration data.</span>
+</span><span id="line-12">
+</span><span id="line-13"><span class="sd">    The `CalibrationStore` class provides a unified interface for interacting with both</span>
+</span><span id="line-14"><span class="sd">    local (SQLite) and remote (PostgreSQL) calibration databases. It handles caching</span>
+</span><span id="line-15"><span class="sd">    of calibration files, querying for specific calibrations, and synchronizing</span>
+</span><span id="line-16"><span class="sd">    calibration metadata between local and remote repositories.</span>
+</span><span id="line-17">
+</span><span id="line-18"><span class="sd">    It relies on environment variables for default configurations, such as cache</span>
+</span><span id="line-19"><span class="sd">    directory and database URLs, but these can be overridden during initialization.</span>
+</span><span id="line-20">
+</span><span id="line-21"><span class="sd">    Attributes:</span>
+</span><span id="line-22"><span class="sd">        orm_class (type[CalibrationORM]): The SQLAlchemy ORM class used for database queries.</span>
+</span><span id="line-23"><span class="sd">        use_cached (bool): If True, cached calibrations are used; otherwise, calibrations are always downloaded.</span>
+</span><span id="line-24"><span class="sd">        cache_dir (str): The base directory for storing cached calibration files and the local database.</span>
+</span><span id="line-25"><span class="sd">        calibrations_url (str | None): The URL from which calibration files can be downloaded.</span>
+</span><span id="line-26"><span class="sd">        local_db (LocalCalibrationDB): An instance of the local SQLite database handler.</span>
+</span><span id="line-27"><span class="sd">        remote_db (RemoteCalibrationDB | None): An instance of the remote PostgreSQL database handler, if configured.</span>
+</span><span id="line-28"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="line-29">
+</span><span id="line-30">    <span class="n">_DEFAULT_KOA_CALIBRATION_DATABASE_URL</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># NOTE: Eventually change KOA PostgreSQL URL</span>
+</span><span id="line-31">    <span class="n">_DEFAULT_KOA_CALIBRATION_URL</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># NOTE: Eventually change KOA URL = &quot;https://koa.ipac.caltech.edu/cgi-bin/getKOA/nph-getKOA?return_mode=json&amp;</span>
+</span><span id="line-32">    
+</span><span id="line-33">    <span class="c1"># ENV VARS</span>
+</span><span id="line-34">    <span class="c1"># KOA_CALIBRATION_CACHE</span>
+</span><span id="line-35">    <span class="c1">#     REQUIRED: Path to top level directory for downloaded calibrations.</span>
+</span><span id="line-36">    <span class="c1"># KOA_LOCAL_DATABASE_FILENAME</span>
+</span><span id="line-37">    <span class="c1">#     OPTIONAL: Name of the local SQLite database file. Default is &#39;orm_class.hispec_calibrations.db&#39; for HISPEC and &#39;parvi_calibrations.db&#39; for PARVI.</span>
+</span><span id="line-38">    <span class="c1"># KOA_REMOTE_DATABASE_URL</span>
+</span><span id="line-39">    <span class="c1">#     OPTIONAL: PostgreSQL URL for the remote database. Set to None for only local operations including PARVI.</span>
+</span><span id="line-40">    <span class="c1">#     Default is None for now, eventually KOA URL once deployed.</span>
+</span><span id="line-41">    <span class="c1"># KOA_CALIBRATION_URL</span>
+</span><span id="line-42">    <span class="c1">#     OPTIONAL: URL where actual calibrations (FITS files) are stored. Set to None for only local operations including PARVI.</span>
+</span><span id="line-43">    <span class="c1">#     Default is None for now, eventually KOA once deployed.</span>
+</span><span id="line-44">
+</span><span id="line-45">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="line-46">        <span class="bp">self</span><span class="p">,</span>
+</span><span id="line-47">        <span class="n">orm_class</span> <span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">CalibrationORM</span><span class="p">],</span>
+</span><span id="line-48">        <span class="n">cache_dir</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-49">        <span class="n">local_database_filename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-50">        <span class="n">remote_database_url</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-51">        <span class="n">calibrations_url</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-52">        <span class="n">use_cached</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-53">    <span class="p">):</span>
+</span><span id="line-54"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-55"><span class="sd">        Initializes a new instance of the CalibrationStore.</span>
+</span><span id="line-56">
+</span><span id="line-57"><span class="sd">        This constructor sets up the local and, optionally, remote database connections,</span>
+</span><span id="line-58"><span class="sd">        configures the caching directory, and determines whether to use cached calibrations.</span>
+</span><span id="line-59"><span class="sd">        Environment variables can be used to provide default values for many parameters.</span>
+</span><span id="line-60">
+</span><span id="line-61"><span class="sd">        Args:</span>
+</span><span id="line-62"><span class="sd">            orm_class (type[CalibrationORM]): The SQLAlchemy ORM class that defines the structure</span>
+</span><span id="line-63"><span class="sd">                                              of the calibration data. This class is used for</span>
+</span><span id="line-64"><span class="sd">                                              database queries and interactions.</span>
+</span><span id="line-65"><span class="sd">            cache_dir (str | None): The absolute path to the directory where calibration files</span>
+</span><span id="line-66"><span class="sd">                                    and the local SQLite database will be stored. If `None`,</span>
+</span><span id="line-67"><span class="sd">                                    the value of the `KOA_CALIBRATION_CACHE` environment variable</span>
+</span><span id="line-68"><span class="sd">                                    is used. This parameter is required either directly or via</span>
+</span><span id="line-69"><span class="sd">                                    the environment variable.</span>
+</span><span id="line-70"><span class="sd">            local_database_filename (str | None): The filename for the local SQLite database.</span>
+</span><span id="line-71"><span class="sd">                                                  If `None`, the value of the `KOA_LOCAL_DATABASE_FILENAME`</span>
+</span><span id="line-72"><span class="sd">                                                  environment variable is used. If that&#39;s also `None`,</span>
+</span><span id="line-73"><span class="sd">                                                  a default filename based on the `orm_class` table name</span>
+</span><span id="line-74"><span class="sd">                                                  is generated (e.g., `tablename_calibrations.db`).</span>
+</span><span id="line-75"><span class="sd">            remote_database_url (str | None): The URL for the remote PostgreSQL database.</span>
+</span><span id="line-76"><span class="sd">                                             If `None`, the value of the `KOA_REMOTE_CALIBRATION_URL`</span>
+</span><span id="line-77"><span class="sd">                                             environment variable is used. If both are `None`,</span>
+</span><span id="line-78"><span class="sd">                                             no remote database connection is established.</span>
+</span><span id="line-79"><span class="sd">            calibrations_url (str | None): The base URL from which calibration files can be downloaded.</span>
+</span><span id="line-80"><span class="sd">                                          If `None`, the value of the `KOA_CALIBRATION_URL` environment</span>
+</span><span id="line-81"><span class="sd">                                          variable is used. If both are `None`, remote calibration</span>
+</span><span id="line-82"><span class="sd">                                          downloading might not be fully functional.</span>
+</span><span id="line-83"><span class="sd">            use_cached (bool | None): If `True`, the store will prioritize using locally cached</span>
+</span><span id="line-84"><span class="sd">                                      calibration files if available. If `False`, it will always</span>
+</span><span id="line-85"><span class="sd">                                      attempt to download calibrations from the remote source,</span>
+</span><span id="line-86"><span class="sd">                                      even if a cached version exists. If `None`, the value of</span>
+</span><span id="line-87"><span class="sd">                                      the `KOA_USE_CACHED_CALIBRATIONS` environment variable is used</span>
+</span><span id="line-88"><span class="sd">                                      (parsed as `True` unless explicitly &#39;false&#39; or &#39;0&#39;). If that&#39;s</span>
+</span><span id="line-89"><span class="sd">                                      also `None`, it defaults to `True`.</span>
+</span><span id="line-90">
+</span><span id="line-91"><span class="sd">        Raises:</span>
+</span><span id="line-92"><span class="sd">            AssertionError: If `cache_dir` is `None` and `KOA_CALIBRATION_CACHE` environment</span>
+</span><span id="line-93"><span class="sd">                            variable is not set.</span>
+</span><span id="line-94">
+</span><span id="line-95"><span class="sd">        Example:</span>
+</span><span id="line-96"><span class="sd">            &gt;&gt;&gt; from koa_middleware.database.orm_base import Base</span>
+</span><span id="line-97"><span class="sd">            &gt;&gt;&gt; from sqlalchemy import Column, Integer, String</span>
+</span><span id="line-98"><span class="sd">            &gt;&gt;&gt; class MyCalibrationORM(Base):</span>
+</span><span id="line-99"><span class="sd">            ...     __tablename__ = &#39;my_calibrations&#39;</span>
+</span><span id="line-100"><span class="sd">            ...     id = Column(Integer, primary_key=True)</span>
+</span><span id="line-101"><span class="sd">            ...     name = Column(String)</span>
+</span><span id="line-102"><span class="sd">            &gt;&gt;&gt; # Initialize with explicit parameters</span>
+</span><span id="line-103"><span class="sd">            &gt;&gt;&gt; store = CalibrationStore(</span>
+</span><span id="line-104"><span class="sd">            ...     orm_class=MyCalibrationORM,</span>
+</span><span id="line-105"><span class="sd">            ...     cache_dir=&#39;/tmp/koa_cache&#39;,</span>
+</span><span id="line-106"><span class="sd">            ...     local_database_filename=&#39;my_cal.db&#39;,</span>
+</span><span id="line-107"><span class="sd">            ...     use_cached=True</span>
+</span><span id="line-108"><span class="sd">            ... )</span>
+</span><span id="line-109"><span class="sd">            &gt;&gt;&gt; # Initialize using environment variables (assuming they are set)</span>
+</span><span id="line-110"><span class="sd">            &gt;&gt;&gt; # os.environ[&#39;KOA_CALIBRATION_CACHE&#39;] = &#39;/tmp/koa_cache_env&#39;</span>
+</span><span id="line-111"><span class="sd">            &gt;&gt;&gt; # store_env = CalibrationStore(orm_class=MyCalibrationORM)</span>
+</span><span id="line-112"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-113">        <span class="bp">self</span><span class="o">.</span><span class="n">orm_class</span> <span class="o">=</span> <span class="n">orm_class</span>
+</span><span id="line-114">
+</span><span id="line-115">        <span class="k">if</span> <span class="n">use_cached</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-116">            <span class="bp">self</span><span class="o">.</span><span class="n">use_cached</span> <span class="o">=</span> <span class="n">use_cached</span>
+</span><span id="line-117">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-118">            <span class="bp">self</span><span class="o">.</span><span class="n">use_cached</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;KOA_USE_CACHED_CALIBRATIONS&#39;</span><span class="p">,</span> <span class="s1">&#39;true&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;false&#39;</span>
+</span><span id="line-119">        
+</span><span id="line-120">        <span class="k">if</span> <span class="n">cache_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-121">            <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">=</span> <span class="n">cache_dir</span>
+</span><span id="line-122">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-123">            <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;KOA_CALIBRATION_CACHE&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="line-124">            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;KOA_CALIBRATION_CACHE environment variable must be set to a valid directory path.&quot;</span>
+</span><span id="line-125">        
+</span><span id="line-126">        <span class="k">if</span> <span class="n">calibrations_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-127">            <span class="bp">self</span><span class="o">.</span><span class="n">calibrations_url</span> <span class="o">=</span> <span class="n">calibrations_url</span>
+</span><span id="line-128">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-129">            <span class="bp">self</span><span class="o">.</span><span class="n">calibrations_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;KOA_CALIBRATION_URL&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_KOA_CALIBRATION_URL</span><span class="p">)</span>
+</span><span id="line-130">
+</span><span id="line-131">        <span class="bp">self</span><span class="o">.</span><span class="n">init_cache</span><span class="p">(</span><span class="n">local_database_filename</span><span class="p">)</span>
+</span><span id="line-132">        <span class="bp">self</span><span class="o">.</span><span class="n">init_remote_db</span><span class="p">(</span><span class="n">remote_database_url</span><span class="p">)</span>
+</span><span id="line-133">
+<div class="viewcode-block" id="CalibrationStore.init_cache">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.init_cache">[docs]</a>
+</span><span id="line-134">    <span class="k">def</span><span class="w"> </span><span class="nf">init_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_database_filename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="line-135"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-136"><span class="sd">        Initializes the local calibration cache and database.</span>
+</span><span id="line-137">
+</span><span id="line-138"><span class="sd">        This method sets up the necessary directory structure for caching calibration</span>
+</span><span id="line-139"><span class="sd">        files and initializes the `LocalCalibrationDB` instance for managing the</span>
+</span><span id="line-140"><span class="sd">        local SQLite database.</span>
+</span><span id="line-141">
+</span><span id="line-142"><span class="sd">        Args:</span>
+</span><span id="line-143"><span class="sd">            local_database_filename (str | None): The desired filename for the local</span>
+</span><span id="line-144"><span class="sd">                                                  SQLite database. If `None`, the method</span>
+</span><span id="line-145"><span class="sd">                                                  will attempt to use the environment variable</span>
+</span><span id="line-146"><span class="sd">                                                  `KOA_LOCAL_DATABASE_FILENAME` or generate</span>
+</span><span id="line-147"><span class="sd">                                                  a default filename based on the ORM class.</span>
+</span><span id="line-148">
+</span><span id="line-149"><span class="sd">        Side Effects:</span>
+</span><span id="line-150"><span class="sd">            - Creates the `cache_dir`, `cache_dir/calibrations`, and `cache_dir/database`</span>
+</span><span id="line-151"><span class="sd">              directories if they do not already exist.</span>
+</span><span id="line-152"><span class="sd">            - Initializes `self.local_db` with a `LocalCalibrationDB` instance.</span>
+</span><span id="line-153"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-154">        <span class="k">if</span> <span class="n">local_database_filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-155">            <span class="n">local_database_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;KOA_LOCAL_DATABASE_FILENAME&#39;</span><span class="p">)</span>
+</span><span id="line-156">            <span class="k">if</span> <span class="n">local_database_filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-157">                <span class="c1"># NOTE: KEEP AN EYE ON HOW LOCAL DB FILENAMES ARE GENERATED</span>
+</span><span id="line-158">                <span class="n">local_database_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">orm_class</span><span class="o">.</span><span class="n">__tablename__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s1">_calibrations.db&#39;</span>
+</span><span id="line-159">        
+</span><span id="line-160">        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-161">        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="s1">&#39;calibrations&#39;</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-162">        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="s1">&#39;database&#39;</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-163">        <span class="n">local_db_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="s1">&#39;database&#39;</span><span class="p">,</span> <span class="n">local_database_filename</span><span class="p">)</span>
+</span><span id="line-164">        <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span> <span class="o">=</span> <span class="n">LocalCalibrationDB</span><span class="p">(</span><span class="n">db_path</span><span class="o">=</span><span class="n">local_db_filepath</span><span class="p">,</span> <span class="n">orm_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">orm_class</span><span class="p">)</span></div>
+
+</span><span id="line-165">
+<div class="viewcode-block" id="CalibrationStore.init_remote_db">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.init_remote_db">[docs]</a>
+</span><span id="line-166">    <span class="k">def</span><span class="w"> </span><span class="nf">init_remote_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">remote_database_url</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="line-167"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-168"><span class="sd">        Initializes the connection to the remote calibration database.</span>
+</span><span id="line-169">
+</span><span id="line-170"><span class="sd">        This method attempts to establish a connection to a remote PostgreSQL database</span>
+</span><span id="line-171"><span class="sd">        using the provided URL or an environment variable. If no URL is provided</span>
+</span><span id="line-172"><span class="sd">        (either directly or via environment variable), the `remote_db` attribute</span>
+</span><span id="line-173"><span class="sd">        will be set to `None`.</span>
+</span><span id="line-174">
+</span><span id="line-175"><span class="sd">        Args:</span>
+</span><span id="line-176"><span class="sd">            remote_database_url (str | None): The URL for the remote PostgreSQL database.</span>
+</span><span id="line-177"><span class="sd">                                             If `None`, the `KOA_REMOTE_CALIBRATION_URL`</span>
+</span><span id="line-178"><span class="sd">                                             environment variable is checked.</span>
+</span><span id="line-179">
+</span><span id="line-180"><span class="sd">        Side Effects:</span>
+</span><span id="line-181"><span class="sd">            - Initializes `self.remote_db` with a `RemoteCalibrationDB` instance if a URL is available,</span>
+</span><span id="line-182"><span class="sd">              otherwise sets it to `None`.</span>
+</span><span id="line-183"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-184">        <span class="n">remote_database_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;KOA_REMOTE_CALIBRATION_URL&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_KOA_CALIBRATION_DATABASE_URL</span><span class="p">)</span>
+</span><span id="line-185">        <span class="k">if</span> <span class="n">remote_database_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-186">            <span class="bp">self</span><span class="o">.</span><span class="n">remote_db</span> <span class="o">=</span> <span class="n">RemoteCalibrationDB</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">remote_database_url</span><span class="p">)</span>
+</span><span id="line-187">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-188">            <span class="bp">self</span><span class="o">.</span><span class="n">remote_db</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+</span><span id="line-189">
+</span><span id="line-190">    <span class="k">def</span><span class="w"> </span><span class="nf">_get_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calibration</span> <span class="p">:</span> <span class="n">CalibrationORM</span><span class="p">,</span> <span class="n">use_cached</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-191"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-192"><span class="sd">        Retrieves the calibration file based on its ORM instance.</span>
+</span><span id="line-193">
+</span><span id="line-194"><span class="sd">        This internal method checks if the calibration is already cached locally.</span>
+</span><span id="line-195"><span class="sd">        If it is and `use_cached` is `True`, the local path is returned. Otherwise,</span>
+</span><span id="line-196"><span class="sd">        it attempts to download the calibration.</span>
+</span><span id="line-197">
+</span><span id="line-198"><span class="sd">        Args:</span>
+</span><span id="line-199"><span class="sd">            calibration (CalibrationORM): The ORM instance representing the calibration to retrieve.</span>
+</span><span id="line-200"><span class="sd">            use_cached (bool | None): If `True`, returns the cached calibration if available.</span>
+</span><span id="line-201"><span class="sd">                                      If `False`, always downloads from the remote even if already cached.</span>
+</span><span id="line-202"><span class="sd">                                      If `None`, defaults to `self.use_cached`.</span>
+</span><span id="line-203">
+</span><span id="line-204"><span class="sd">        Returns:</span>
+</span><span id="line-205"><span class="sd">            str: The local file path of the calibration file.</span>
+</span><span id="line-206"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-207">        <span class="n">filepath_local</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calibration_in_cache</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
+</span><span id="line-208">        <span class="k">if</span> <span class="n">use_cached</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-209">            <span class="n">use_cached</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cached</span>
+</span><span id="line-210">        <span class="k">if</span> <span class="n">filepath_local</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">use_cached</span><span class="p">:</span>
+</span><span id="line-211">            <span class="k">return</span> <span class="n">filepath_local</span>
+</span><span id="line-212">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-213">            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_calibration</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
+</span><span id="line-214">    
+<div class="viewcode-block" id="CalibrationStore.get_calibration">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.get_calibration">[docs]</a>
+</span><span id="line-215">    <span class="k">def</span><span class="w"> </span><span class="nf">get_calibration</span><span class="p">(</span>
+</span><span id="line-216">        <span class="bp">self</span><span class="p">,</span>
+</span><span id="line-217">        <span class="nb">input</span><span class="p">,</span>
+</span><span id="line-218">        <span class="n">selector</span> <span class="p">:</span> <span class="n">CalibrationSelector</span><span class="p">,</span>
+</span><span id="line-219">        <span class="n">use_cached</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-220">        <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="line-221">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">CalibrationORM</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-222"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-223"><span class="sd">        Selects the best calibration based on input data and a selection rule, then retrieves it.</span>
+</span><span id="line-224">
+</span><span id="line-225"><span class="sd">        This method uses a `CalibrationSelector` to identify the most appropriate calibration</span>
+</span><span id="line-226"><span class="sd">        for the given input data. Once selected, it retrieves the calibration file,</span>
+</span><span id="line-227"><span class="sd">        downloading it if it&#39;s not already cached locally.</span>
+</span><span id="line-228">
+</span><span id="line-229"><span class="sd">        Args:</span>
+</span><span id="line-230"><span class="sd">            input: The input data product for which a calibration is needed.</span>
+</span><span id="line-231"><span class="sd">                   The type of this input depends on the specific `selector` used.</span>
+</span><span id="line-232"><span class="sd">            selector (CalibrationSelector): An instance of a `CalibrationSelector` that defines</span>
+</span><span id="line-233"><span class="sd">                                          the logic for selecting the best calibration from the database.</span>
+</span><span id="line-234"><span class="sd">            use_cached (bool | None): If `True`, returns the cached calibration if available.</span>
+</span><span id="line-235"><span class="sd">                                      If `False`, always downloads from the remote even if already cached.</span>
+</span><span id="line-236"><span class="sd">                                      If `None`, defaults to `self.use_cached`.</span>
+</span><span id="line-237"><span class="sd">            **kwargs: Additional parameters to pass to the `selector.select()` method.</span>
+</span><span id="line-238">
+</span><span id="line-239"><span class="sd">        Returns:</span>
+</span><span id="line-240"><span class="sd">            tuple[CalibrationORM, str]: A tuple containing:</span>
+</span><span id="line-241"><span class="sd">                - `CalibrationORM`: The ORM instance representing the selected calibration.</span>
+</span><span id="line-242"><span class="sd">                - `str`: The local file path of the retrieved calibration file.</span>
+</span><span id="line-243">
+</span><span id="line-244"><span class="sd">        Example:</span>
+</span><span id="line-245"><span class="sd">            &gt;&gt;&gt; # Assuming &#39;my_input_data&#39; and &#39;my_selector&#39; are defined</span>
+</span><span id="line-246"><span class="sd">            &gt;&gt;&gt; # local_filepath, calibration_orm = store.get_calibration(my_input_data, my_selector)</span>
+</span><span id="line-247"><span class="sd">            &gt;&gt;&gt; # print(f&quot;Calibration file: {local_filepath}&quot;)</span>
+</span><span id="line-248"><span class="sd">            &gt;&gt;&gt; # print(f&quot;Calibration ORM ID: {calibration_orm.id}&quot;)</span>
+</span><span id="line-249"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-250">        <span class="n">orm_result</span> <span class="o">=</span> <span class="n">selector</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="line-251">        <span class="n">local_filepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_calibration</span><span class="p">(</span><span class="n">orm_result</span><span class="p">,</span> <span class="n">use_cached</span><span class="o">=</span><span class="n">use_cached</span><span class="p">)</span>
+</span><span id="line-252">        <span class="k">return</span> <span class="n">local_filepath</span><span class="p">,</span> <span class="n">orm_result</span></div>
+
+</span><span id="line-253">
+<div class="viewcode-block" id="CalibrationStore.get_calibration_by_id">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.get_calibration_by_id">[docs]</a>
+</span><span id="line-254">    <span class="k">def</span><span class="w"> </span><span class="nf">get_calibration_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calibration_id</span> <span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">CalibrationORM</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+</span><span id="line-255"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-256"><span class="sd">        Retrieves a calibration by its unique identifier.</span>
+</span><span id="line-257">
+</span><span id="line-258"><span class="sd">        This method queries the local database for a calibration matching the given ID.</span>
+</span><span id="line-259"><span class="sd">        If found, it retrieves the calibration file (downloading if necessary).</span>
+</span><span id="line-260">
+</span><span id="line-261"><span class="sd">        Args:</span>
+</span><span id="line-262"><span class="sd">            calibration_id (str): The unique identifier of the calibration to retrieve.</span>
+</span><span id="line-263">
+</span><span id="line-264"><span class="sd">        Returns:</span>
+</span><span id="line-265"><span class="sd">            tuple[CalibrationORM | None, str | None]: A tuple containing:</span>
+</span><span id="line-266"><span class="sd">                - `CalibrationORM | None`: The ORM instance of the found calibration, or `None` if not found.</span>
+</span><span id="line-267"><span class="sd">                - `str | None`: The local file path of the calibration file, or `None` if not found.</span>
+</span><span id="line-268">
+</span><span id="line-269"><span class="sd">        Warns:</span>
+</span><span id="line-270"><span class="sd">            UserWarning: If no calibration is found with the given ID.</span>
+</span><span id="line-271"><span class="sd">            UserWarning: If multiple calibrations are found with the same ID (returns the first one).</span>
+</span><span id="line-272">
+</span><span id="line-273"><span class="sd">        Example:</span>
+</span><span id="line-274"><span class="sd">            &gt;&gt;&gt; # local_filepath, calibration_orm = store.get_calibration_by_id(&#39;some_calibration_id&#39;)</span>
+</span><span id="line-275"><span class="sd">            &gt;&gt;&gt; # if calibration_orm:</span>
+</span><span id="line-276"><span class="sd">            &gt;&gt;&gt; #     print(f&quot;Found calibration: {calibration_orm.id} at {local_filepath}&quot;)</span>
+</span><span id="line-277"><span class="sd">            &gt;&gt;&gt; # else:</span>
+</span><span id="line-278"><span class="sd">            &gt;&gt;&gt; #     print(&quot;Calibration not found.&quot;)</span>
+</span><span id="line-279"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-280">        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="o">.</span><span class="n">session_manager</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+</span><span id="line-281">            <span class="n">calibration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="o">.</span><span class="n">query_by_id</span><span class="p">(</span><span class="n">calibration_id</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+</span><span id="line-282">            <span class="k">if</span> <span class="n">calibration</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="line-283">                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No calibrations found with ID </span><span class="si">{</span><span class="n">calibration_id</span><span class="si">}</span><span class="s2">, returning None&quot;</span><span class="p">)</span>
+</span><span id="line-284">                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="line-285">            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="line-286">                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Multiple calibrations found with ID </span><span class="si">{</span><span class="n">calibration_id</span><span class="si">}</span><span class="s2">, returning first found.&quot;</span><span class="p">)</span>
+</span><span id="line-287">            <span class="n">calibration</span> <span class="o">=</span> <span class="n">calibration</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="line-288">            <span class="n">local_filepath</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_calibration</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
+</span><span id="line-289">            <span class="k">return</span> <span class="n">local_filepath</span><span class="p">,</span> <span class="n">calibration</span></div>
+
+</span><span id="line-290">            
+</span><span id="line-291">
+<div class="viewcode-block" id="CalibrationStore.download_calibration">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.download_calibration">[docs]</a>
+</span><span id="line-292">    <span class="k">def</span><span class="w"> </span><span class="nf">download_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calibration</span> <span class="p">:</span> <span class="n">CalibrationORM</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-293"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-294"><span class="sd">        Downloads a calibration file from the remote URL.</span>
+</span><span id="line-295">
+</span><span id="line-296"><span class="sd">        This method is responsible for fetching the actual calibration file (e.g., FITS file)</span>
+</span><span id="line-297"><span class="sd">        from the configured remote URL and storing it in the local cache directory.</span>
+</span><span id="line-298">
+</span><span id="line-299"><span class="sd">        Args:</span>
+</span><span id="line-300"><span class="sd">            calibration (CalibrationORM): The ORM instance representing the calibration to download.</span>
+</span><span id="line-301">
+</span><span id="line-302"><span class="sd">        Returns:</span>
+</span><span id="line-303"><span class="sd">            str: The local file path of the downloaded calibration file.</span>
+</span><span id="line-304">
+</span><span id="line-305"><span class="sd">        Raises:</span>
+</span><span id="line-306"><span class="sd">            NotImplementedError: This method is currently under development and not yet implemented.</span>
+</span><span id="line-307"><span class="sd">                                 It will be implemented once the remote KOA infrastructure is set up.</span>
+</span><span id="line-308"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-309">        <span class="c1"># NOTE: Implement this once we are set up at Keck or KOA.</span>
+</span><span id="line-310">        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Download calibration not implemented yet.&quot;</span><span class="p">)</span></div>
+
+</span><span id="line-311">    
+<div class="viewcode-block" id="CalibrationStore.calibration_in_cache">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.calibration_in_cache">[docs]</a>
+</span><span id="line-312">    <span class="k">def</span><span class="w"> </span><span class="nf">calibration_in_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calibration</span> <span class="p">:</span> <span class="n">CalibrationORM</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-313"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-314"><span class="sd">        Checks if a calibration file is already present in the local cache.</span>
+</span><span id="line-315">
+</span><span id="line-316"><span class="sd">        Args:</span>
+</span><span id="line-317"><span class="sd">            calibration (CalibrationORM): The ORM instance representing the calibration to check.</span>
+</span><span id="line-318">
+</span><span id="line-319"><span class="sd">        Returns:</span>
+</span><span id="line-320"><span class="sd">            str | None: The absolute local file path of the calibration if it exists in the cache,</span>
+</span><span id="line-321"><span class="sd">                        otherwise `None`.</span>
+</span><span id="line-322"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-323">        <span class="n">filepath_local</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_local_filepath</span><span class="p">(</span><span class="n">calibration</span><span class="p">)</span>
+</span><span id="line-324">        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filepath_local</span><span class="p">):</span>
+</span><span id="line-325">            <span class="k">return</span> <span class="n">filepath_local</span>
+</span><span id="line-326">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-327">            <span class="k">return</span> <span class="kc">None</span></div>
+
+</span><span id="line-328">    
+<div class="viewcode-block" id="CalibrationStore.get_local_filepath">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.get_local_filepath">[docs]</a>
+</span><span id="line-329">    <span class="k">def</span><span class="w"> </span><span class="nf">get_local_filepath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calibration</span> <span class="p">:</span> <span class="n">CalibrationORM</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-330"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-331"><span class="sd">        Constructs the expected local file path for a given calibration ORM object.</span>
+</span><span id="line-332">
+</span><span id="line-333"><span class="sd">        This method does not check for the existence of the file, only generates its path.</span>
+</span><span id="line-334">
+</span><span id="line-335"><span class="sd">        Args:</span>
+</span><span id="line-336"><span class="sd">            calibration (CalibrationORM): The ORM instance representing the calibration.</span>
+</span><span id="line-337">
+</span><span id="line-338"><span class="sd">        Returns:</span>
+</span><span id="line-339"><span class="sd">            str: The absolute local file path where the calibration file is expected to be stored.</span>
+</span><span id="line-340"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-341">        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="s1">&#39;calibrations&#39;</span><span class="p">,</span> <span class="n">calibration</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span></div>
+
+</span><span id="line-342">    
+<div class="viewcode-block" id="CalibrationStore.close">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.close">[docs]</a>
+</span><span id="line-343">    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="line-344"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-345"><span class="sd">        Closes the connections to both local and remote databases.</span>
+</span><span id="line-346">
+</span><span id="line-347"><span class="sd">        This method calls `engine.dispose()` on the underlying SQLAlchemy engines</span>
+</span><span id="line-348"><span class="sd">        for both `self.local_db` and `self.remote_db` (if they exist),</span>
+</span><span id="line-349"><span class="sd">        releasing any held resources.</span>
+</span><span id="line-350"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-351">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">remote_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-352">            <span class="bp">self</span><span class="o">.</span><span class="n">remote_db</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="line-353">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-354">            <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+</span><span id="line-355">    
+<div class="viewcode-block" id="CalibrationStore.get_missing_local_entries">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.get_missing_local_entries">[docs]</a>
+</span><span id="line-356">    <span class="k">def</span><span class="w"> </span><span class="nf">get_missing_local_entries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">CalibrationORM</span><span class="p">]:</span>
+</span><span id="line-357"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-358"><span class="sd">        Identifies calibration entries present in the remote database but missing from the local database.</span>
+</span><span id="line-359">
+</span><span id="line-360"><span class="sd">        This method queries the remote database for entries that have been updated more recently</span>
+</span><span id="line-361"><span class="sd">        than the last update recorded in the local database. It is intended to help synchronize</span>
+</span><span id="line-362"><span class="sd">        the local cache with the remote source.</span>
+</span><span id="line-363">
+</span><span id="line-364"><span class="sd">        Returns:</span>
+</span><span id="line-365"><span class="sd">            list[CalibrationORM]: A list of `CalibrationORM` objects representing entries</span>
+</span><span id="line-366"><span class="sd">                                  that are in the remote DB but not yet in the local DB.</span>
+</span><span id="line-367">
+</span><span id="line-368"><span class="sd">        Raises:</span>
+</span><span id="line-369"><span class="sd">            AttributeError: If `self.remote_db` is `None` (i.e., no remote database is configured).</span>
+</span><span id="line-370">
+</span><span id="line-371"><span class="sd">        Note:</span>
+</span><span id="line-372"><span class="sd">            This method is currently under development and requires a formal remote DB configuration</span>
+</span><span id="line-373"><span class="sd">            to be fully functional and tested.</span>
+</span><span id="line-374"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-375">        <span class="c1"># NOTE: Need to test this method once formal remote DB is configured.</span>
+</span><span id="line-376">        <span class="n">last_updated_local</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="o">.</span><span class="n">get_last_updated</span><span class="p">()</span>
+</span><span id="line-377">        <span class="n">calibrations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remote_db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+</span><span id="line-378">            <span class="n">date_time_start</span><span class="o">=</span><span class="n">last_updated_local</span><span class="p">,</span>
+</span><span id="line-379">        <span class="p">)</span>
+</span><span id="line-380">        <span class="k">return</span> <span class="n">calibrations</span></div>
+
+</span><span id="line-381">
+<div class="viewcode-block" id="CalibrationStore.register_local_calibration">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.register_local_calibration">[docs]</a>
+</span><span id="line-382">    <span class="k">def</span><span class="w"> </span><span class="nf">register_local_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calibration</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">CalibrationORM</span><span class="p">]:</span>
+</span><span id="line-383"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-384"><span class="sd">        Registers a calibration that has been saved to the local calibrations directory.</span>
+</span><span id="line-385">
+</span><span id="line-386"><span class="sd">        This method takes a calibration object (expected to be a data model with a `save` method)</span>
+</span><span id="line-387"><span class="sd">        and adds its corresponding ORM instance to the local SQLite database.</span>
+</span><span id="line-388">
+</span><span id="line-389"><span class="sd">        Args:</span>
+</span><span id="line-390"><span class="sd">            calibration: The calibration object to register. This object is expected to have</span>
+</span><span id="line-391"><span class="sd">                         a `save(output_dir)` method that saves the calibration file and returns</span>
+</span><span id="line-392"><span class="sd">                         its local path, and a `to_orm()` method that converts it to a</span>
+</span><span id="line-393"><span class="sd">                         `CalibrationORM` instance.</span>
+</span><span id="line-394">
+</span><span id="line-395"><span class="sd">        Returns:</span>
+</span><span id="line-396"><span class="sd">            tuple[str, CalibrationORM]: A tuple containing:</span>
+</span><span id="line-397"><span class="sd">            - `str`: The local file path where the calibration was saved.</span>
+</span><span id="line-398"><span class="sd">            - `CalibrationORM`: The ORM instance representing the registered calibration,</span>
+</span><span id="line-399"><span class="sd">                                as added to the local database.</span>
+</span><span id="line-400">
+</span><span id="line-401"><span class="sd">        Note:</span>
+</span><span id="line-402"><span class="sd">            This method assumes the input `calibration` object is a data model that handles</span>
+</span><span id="line-403"><span class="sd">            its own saving to disk and conversion to an ORM object. Consider alternative</span>
+</span><span id="line-404"><span class="sd">            approaches if this assumption changes.</span>
+</span><span id="line-405"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-406">        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="s1">&#39;calibrations&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span>
+</span><span id="line-407">        <span class="n">local_filepath</span> <span class="o">=</span> <span class="n">calibration</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">)</span>
+</span><span id="line-408">        <span class="n">cal_orm</span> <span class="o">=</span> <span class="n">calibration</span><span class="o">.</span><span class="n">to_orm</span><span class="p">()</span>
+</span><span id="line-409">        <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cal_orm</span><span class="p">)</span>
+</span><span id="line-410">        <span class="k">return</span> <span class="n">local_filepath</span><span class="p">,</span> <span class="n">cal_orm</span></div>
+
+</span><span id="line-411">    
+<div class="viewcode-block" id="CalibrationStore.sync_from_remote">
+<a class="viewcode-back" href="../../api/generated/koa_middleware.store.html#koa_middleware.store.CalibrationStore.sync_from_remote">[docs]</a>
+</span><span id="line-412">    <span class="k">def</span><span class="w"> </span><span class="nf">sync_from_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">CalibrationORM</span><span class="p">]:</span>
+</span><span id="line-413"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-414"><span class="sd">        Synchronizes the local database with the remote database.</span>
+</span><span id="line-415">
+</span><span id="line-416"><span class="sd">        This method fetches entries from the remote database that are missing from</span>
+</span><span id="line-417"><span class="sd">        the local database (based on the `LAST_UPDATED` field) and adds them to the</span>
+</span><span id="line-418"><span class="sd">        local database.</span>
+</span><span id="line-419">
+</span><span id="line-420"><span class="sd">        Returns:</span>
+</span><span id="line-421"><span class="sd">            list[CalibrationORM]: A list of `CalibrationORM` objects that were added</span>
+</span><span id="line-422"><span class="sd">                                  to the local database during synchronization.</span>
+</span><span id="line-423">
+</span><span id="line-424"><span class="sd">        Note:</span>
+</span><span id="line-425"><span class="sd">            This method is currently under development and requires a formal remote DB configuration</span>
+</span><span id="line-426"><span class="sd">            to be fully functional and tested.</span>
+</span><span id="line-427"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-428">        <span class="n">calibrations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_missing_local_entries</span><span class="p">()</span>
+</span><span id="line-429">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">calibrations</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="line-430">            <span class="bp">self</span><span class="o">.</span><span class="n">local_db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">calibrations</span><span class="p">)</span>
+</span><span id="line-431">        <span class="k">return</span> <span class="n">calibrations</span></div>
+
+</span><span id="line-432">    
+</span><span id="line-433">    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="line-434"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-435"><span class="sd">        Enters the runtime context related to this object.</span>
+</span><span id="line-436">
+</span><span id="line-437"><span class="sd">        This method allows `CalibrationStore` instances to be used with the `with` statement,</span>
+</span><span id="line-438"><span class="sd">        ensuring proper resource management.</span>
+</span><span id="line-439">
+</span><span id="line-440"><span class="sd">        Returns:</span>
+</span><span id="line-441"><span class="sd">            CalibrationStore: The instance itself.</span>
+</span><span id="line-442"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-443">        <span class="k">return</span> <span class="bp">self</span>
+</span><span id="line-444">    
+</span><span id="line-445">    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+</span><span id="line-446"><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-447"><span class="sd">        Exits the runtime context related to this object.</span>
+</span><span id="line-448">
+</span><span id="line-449"><span class="sd">        This method is automatically called when exiting a `with` statement.</span>
+</span><span id="line-450"><span class="sd">        It ensures that the database connections are properly closed by calling</span>
+</span><span id="line-451"><span class="sd">        the `close()` method.</span>
+</span><span id="line-452">
+</span><span id="line-453"><span class="sd">        Args:</span>
+</span><span id="line-454"><span class="sd">            exc_type (type | None): The type of the exception that caused the context</span>
+</span><span id="line-455"><span class="sd">                                    to be exited.</span>
+</span><span id="line-456"><span class="sd">            exc_value (Exception | None): The exception instance that caused the context</span>
+</span><span id="line-457"><span class="sd">                                          to be exited.</span>
+</span><span id="line-458"><span class="sd">            traceback (TracebackType | None): A traceback object encapsulating the call stack</span>
+</span><span id="line-459"><span class="sd">                                              at the point where the exception originally occurred.</span>
+</span><span id="line-460"><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="line-461">        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+</span></code></pre></div>
+    </div></div>
+        </main>
+      </div>
+    </div><footer class="py-6 border-t border-border md:py-0">
+    <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+      <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+        <p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, OIRLab, UCSD&nbsp;Built with <a class="font-medium underline underline-offset-4"
+    href="https://www.sphinx-doc.org"
+    rel="noreferrer">Sphinx 8.1.3</a></p>
+</div>
+</div>
+</footer>
+  </div>
+  
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script defer="defer" src="../../_static/theme.js?v=073f68d9"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+  
+</body>
+</html>
