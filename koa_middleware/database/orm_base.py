@@ -1,6 +1,8 @@
+from sqlalchemy.orm import DeclarativeBase
+
 __all__ = ['CalibrationORM']
 
-class CalibrationORM:
+class CalibrationORM(DeclarativeBase):
     """
     A lightweight mixin base class for SQLAlchemy ORM objects representing calibration data.
 

@@ -46,9 +46,9 @@ def test_minimal_koa_middleware_integration(in_memory_calibration_store):
     minimal_cal = CalibrationTestORM(
         id=test_calibration_id,
         filename=test_filename,
-        master=True,
+        master_cal=True,
         cal_type="dark",
-        instera="test_era_1",
+        instrument_era="test_era_1",
         spectrograph="spectrograph_a",
         mjd_start=test_mjd_start,
         last_updated=test_datetime_obs
@@ -60,10 +60,10 @@ def test_minimal_koa_middleware_integration(in_memory_calibration_store):
     # 3. Use a DarkSelector to retrieve the calibration
     dark_selector = TestDarkSelector()
     input_meta = {
-        'instrument.name': 'test_instrument',
-        'instrument.era': 'test_era_1',
-        'instrument.spectrograph': 'spectrograph_a',
-        'exposure.mjd_start': test_mjd_start + 0.001 # Slightly different MJD to test proximity
+        'instrument_name': 'test_instrument',
+        'instrument_era': 'test_era_1',
+        'spectrograph': 'spectrograph_a',
+        'mjd_start': test_mjd_start + 0.001 # Slightly different MJD to test proximity
     }
 
     selected_orm_instance = dark_selector.select(input_meta, store.local_db)
@@ -73,5 +73,5 @@ def test_minimal_koa_middleware_integration(in_memory_calibration_store):
     assert selected_orm_instance.id == test_calibration_id
     assert selected_orm_instance.filename == test_filename
     assert selected_orm_instance.cal_type == "dark"
-    assert selected_orm_instance.instera == "test_era_1"
+    assert selected_orm_instance.instrument_era == "test_era_1"
     assert selected_orm_instance.spectrograph == "spectrograph_a"
