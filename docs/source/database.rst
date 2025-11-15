@@ -7,7 +7,7 @@ Calibration metadata is stored in an SQL based database (DB) to allow for faster
 Object Relational Mapping (ORM)
 -------------------------------
 
-The database columns are declared in a standard Python class with additional methods for initialization. An ORM must inherit from *both*  :py:class:`~koa_middleware.database.orm_base.CalibrationORM` and the SQLAlchemy `delcarative base <https://docs.sqlalchemy.org/en/13/orm/extensions/declarative/basic_use.html>`_. Below is the minimum specification for a new ORM:
+The database columns are declared in a standard Python class with additional methods for initialization. An ORM must inherit from  :py:class:`~koa_middleware.database.orm_base.CalibrationORM`. Below is the minimum specification for a new ORM:
 
 *Note the minimum requirement will likely change as these protocols are further developed.*
 
@@ -18,12 +18,10 @@ Below is a simple example for creating a new ORM for an instrument called `MyIns
    from sqlalchemy.orm import Mapped
    from sqlalchemy.orm import mapped_column
    from sqlalchemy import String, Float, Boolean
-   from sqlalchemy.orm import declarative_base
    import uuid
    from koa_middleware import CalibrationORM
-   _Base = declarative_base()
 
-   class MyCalibrationORM(CalibrationORM, _Base):
+   class MyCalibrationORM(CalibrationORM):
       # Can be any valid table name
       __tablename__ = "MyInstrument"
 

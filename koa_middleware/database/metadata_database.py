@@ -43,11 +43,9 @@ class CalibrationDB:
                                               and the structure of the calibration data to be stored.
 
         Example:
-            >>> from sqlalchemy.ext.declarative import declarative_base
             >>> from sqlalchemy import Column, Integer, String
-            >>> Base = declarative_base()
-            >>> class MyCalibrationORM(Base):
-            ...     __tablename__ = 'my_calibrations'
+            >>> class MyCalibrationORM(CalibrationORM):
+            ...     __tablename__ = 'MyInstrument'
             ...     id = Column(Integer, primary_key=True)
             ...     name = Column(String)
             >>> db = CalibrationDB('sqlite:///./test.db', MyCalibrationORM)
