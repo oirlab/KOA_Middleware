@@ -46,7 +46,6 @@ classifiers = [
 
 dependencies = [
   "tqdm",
-  #"sqlalchemy>2.0",
   "sqlite-utils>=3.39",
   "requests",
   "platformdirs",
