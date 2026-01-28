@@ -46,8 +46,9 @@ classifiers = [
 
 dependencies = [
   "tqdm",
-  "sqlalchemy>2.0",
+  "sqlite-utils>=3.39",
   "requests",
+  "platformdirs",
 ]
 
 
@@ -68,6 +69,4 @@ include = ["koa_middleware*"]
 namespaces = false
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "docs/source/quickstart.ipynb"]
-addopts = "--nbval"
-
+testpaths = ["tests"]

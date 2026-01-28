@@ -8,10 +8,9 @@ API Reference
    :recursive:
 
    store
-   database.local_database
-   database.metadata_database
-   database.orm_base
-   database.remote_database
    selector_base
-   file_utils
+   database.local_database
+   database.remote_database
+   keck_client
+   utils
    download
