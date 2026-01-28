@@ -1,4 +1,4 @@
-from koa_middleware.file_utils import generate_koa_id, generate_koa_filepath
+from koa_middleware.utils import generate_koa_id, generate_koa_filepath
 
 def test_generate_koa_id():
     instrument_prefix = 'HB'

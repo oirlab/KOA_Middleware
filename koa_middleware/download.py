@@ -1,38 +1,37 @@
 import os
 import requests
 from tqdm import tqdm
+from .logging_utils import logger
 
 
 login_url = "https://koa.ipac.caltech.edu/cgi-bin/KoaAPI/nph-koaLogin?"
 getkoa_url = "https://koa.ipac.caltech.edu/cgi-bin/getKOA/nph-getKOA?return_mode=json&"
 caliblist_url = "https://koa.ipac.caltech.edu/cgi-bin/KoaAPI/nph-getCaliblist?"
 
-
-# NOTE: Possibly for later use, delete if not useful
-#def koa_login(username : str | None, password : str, cookiepath : str):
-#    return Koa.login(cookiepath=cookiepath, username=username, password=password)
-    # # Encode login credentials
-    # param = dict(userid=username, password=password)
-    # data_encoded = urllib.parse.urlencode(param)
-    
-    # # URL
-    # url = self.login_url + data_encoded
-    
-    # cookie_filename = 'cookie.txt'
-    # try:
-    #     Koa.login(username, password)
-    # except Exception as e:
-    #     print(e)
-    #     return False
-
-    # return cookie_filename
-
+BASE_URL_KECK = "https://www3.keck.hawaii.edu/api/calibrations/"
 
 def download_koa(
-        koa_filename : str,
-        output_dir : str,
-        cookies : str | None = None
-    ) -> str:
+    koa_filename : str,
+    output_dir : str,
+    cookies : str | None = None
+) -> str:
+    """
+    Download a file from the Keck Observatory Archive (KOA).
+
+    Parameters
+    ----------
+    koa_filename : str
+        The KOA filename to download.
+    output_dir : str
+        The directory to save the downloaded file.
+    cookies : str, optional
+        Optional cookies to include in the HTTP request.
+
+    Returns
+    -------
+    str
+        The local file path of the downloaded file.
+    """
 
     # Make the directory
     os.makedirs(output_dir, exist_ok=True)
@@ -47,7 +46,7 @@ def download_koa(
     response = requests.get(url, stream=True, cookies=cookies)
 
     if response.status_code != 200:
-        print(f"Error: {response.status_code}")
+        logger.error(f"Error downloading {koa_filename}: HTTP {response.status_code}")
     else:
         # Get total file size from headers if available
         total_size = int(response.headers.get('content-length', 0))

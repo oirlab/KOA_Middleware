@@ -31,9 +31,10 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'nbsphinx',
+    #'numpydoc',
 ]
 
-napoleon_custom_sections = [('Returns', 'params_style')]
+#napoleon_custom_sections = [('Returns', 'params_style')]
 
 autosummary_generate = True  # Generate autosummary stubs automatically
 autodoc_default_options = {

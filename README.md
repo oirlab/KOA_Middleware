@@ -4,3 +4,10 @@ The KOA Middleware package provides an interface for data pipelines to communica
 
 [![GitHub Actions](https://github.com/oirlab/KOA_Middleware/actions/workflows/build-test.yml/badge.svg)](https://github.com/oirlab/KOA_Middleware/actions/workflows/build-test.yml)
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://oirlab.github.io/KOA_Middleware/)
+
+
+Contributors
+------------
+- Bryson Cale (UCSD)
+- Andrea Zonca (UCSD)
+- Max Brodheim (WMKO)

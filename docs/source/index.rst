@@ -2,26 +2,23 @@
 KOA Middleware Documentation
 ****************************
 
-The KOA Middleware package specifies a common interface for data pipelines to communicate with the Keck Observatory Archive (KOA). This site will be under active development as the HISPEC and Liger DRPs (Data Reduction Pipelines) are created.
+The KOA Middleware package provides a common interface for data pipelines to communicate with the Keck Observatory Archive (KOA). This documentation covers the current development version designed for the HISPEC and Liger DRPs (Data Reduction Pipelines).
 
-Purpose and Overview
-====================
+Key Features
+============
 
-The KOA Middleware is designed to streamline the interaction between DRPs and the Keck Observatory Archive (KOA). Its primary purpose is to provide a robust and standardized way to:
+- **Retrieve** calibrations from KOA for data processing and cache them locally for efficient reuse.
+- **Interface** for selecting the most appropriate calibration data for data processing with queries into a local SQLite database.
+- **Environment Configuration**: Uses environment variables for configuring behavior.
 
-*   **Manage Calibration Data:** Efficiently store, retrieve, and synchronize calibration files from both local and remote databases.
-*   **Abstract Database Interactions:** Offer a unified interface for interacting with various calibration databases (e.g., SQLite for local, PostgreSQL for remote).
-*   **Facilitate Data Access:** Simplify the process of accessing and utilizing KOA data within DRPs, ensuring data consistency and availability.
-
-The middleware handles complexities such as caching, database querying, and data synchronization, allowing DRP developers to focus on scientific analysis rather than data management intricacies.
+See the :doc:`quickstart` guide to get started.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   quickstart
    installation
-   store
-   database
+   authentication
+   quickstart
    selectors
    api/api
