@@ -183,3 +183,9 @@ class RemoteCalibrationDB:
     
     def __repr__(self):
         return f"RemoteCalibrationDB(instrument_name={self.instrument_name!r})"
+    
+    @staticmethod
+    def _credentials_available() -> bool:
+        email = os.getenv("KECK_OBSERVER_EMAIL")
+        password = os.getenv("KECK_OBSERVER_PASSWORD")
+        return bool(email and password)

@@ -54,19 +54,25 @@ Additional parameters can be provided to :py:class:`~koa_middleware.store.Calibr
 Calibration Cache Structure
 ---------------------------
 
-In the case of HISPEC, the calibration cache directory is structured as follows:
+In the case of two instruments HISPEC and Liger, the calibration cache directory is structured as follows:
 
 .. code-block:: text
 
-    /hispec_calibration_cache/
+    /koa_calibration_cache/
         ├── calibrations/
-        │   ├── calibration_filename1.fits
-        │   ├── calibration_filename2.fits
+        |   ├── hispec/
+        │   ├────── hispec_cal1.fits
+        │   ├────── hispec_cal2.fits
+        │   └── ...
+        |   ├── liger/
+        │   ├────── liger_cal1.fits
+        │   ├────── liger_cal2.fits
         │   └── ...
         └── database/
             └── hispec_calibrations.db
+            └── liger_calibrations.db
 
-The ``calibrations`` and ``database`` subdirectories are created automatically.
+The ``calibrations`` and ``database`` subdirectories are created automatically. A SQLite database file is created in the ``database`` subdirectory when the store is initialized if the specified database file does not already exist. Calibration files are stored in subdirectories named after the instrument within the ``calibrations`` directory and is also created automatically.
 
 Calibration Data Structure
 --------------------------
@@ -158,11 +164,11 @@ Retrieve a calibration directly by ID, metadata record (dictionary), or filename
             'filename': 'dark.fits'
         })
 
-        # Optionally, also return the full record (dict) in the database
+        # By datamodel
         local_filepath, cal_record = store.get_calibration({
             'id': '12345678-90ab-cdef-1234-567890abcdef',
             'filename': 'dark.fits'
-        }, return_record=True)
+        })
 
 
 Query Local Calibrations
