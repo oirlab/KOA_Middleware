@@ -26,12 +26,6 @@ To create a custom selector, inherit from :py:class:`~koa_middleware.selector_ba
 
 See :py:class:`~koa_middleware.selector_base.CalibrationSelector` for more details on optional methods.
 
-.. You can optionally override these methods to customize the selection logic:
-
-.. - ``select_best(input, candidates, **kwargs)``: Choose the best calibration from the candidates list. Default behavior returns the first candidate.
-.. - ``select_fallback(input, db, **kwargs)``: Provide a fallback calibration if no candidates are found. Default behavior returns None.
-.. - ``_select(input, db, **kwargs)``: Override the entire selection workflow. Default behavior calls ``get_candidates`` then ``select_best``.
-
 Queries use the sqlite-utils API to interact with the local calibration database. See the `sqlite-utils documentation <https://sqlite-utils.datasette.io/en/stable/python-api.html>`_ for details on available query methods. Below are common query patterns.
 
 Example Selector
@@ -45,12 +39,19 @@ Below is an example selector for selecting dark calibrations:
 
     class DarkSelector(CalibrationSelector):
         """
-        Selector for dark calibrations that finds the closest match in datetime_obs.
+        Selector for dark calibrations.
         """
 
-        def get_candidates(self, meta : dict, db : LocalCalibrationDB, **kwargs) -> list[dict]:
+        def get_candidates(self, meta, db : LocalCalibrationDB, **kwargs) -> list[dict]:
             """
             Retrieve candidate dark calibrations matching the input metadata.
+
+            Parameters
+            ----------
+            meta : dict-like
+                Input metadata from the observation.
+            db : LocalCalibrationDB
+                The koa_middleware local calibration database instance.
             """
             # Build SQL query for candidate calibrations
             sql = """
@@ -60,14 +61,16 @@ Below is an example selector for selecting dark calibrations:
                 AND master_cal = 1
             """
 
-            # Can only pass used parameters to the query,
-            # so this filters unused keys from meta
-            params = get_query_params(meta, sql)
+            params = {
+                'cal_type': 'dark',
+                'instrument_era': meta.get('drp_version'),
+                'spectrograph': meta.get('spectrograph'),
+            }
 
             # Fetch all matching rows from the database
             rows = list(db.table.rows_where(
                 sql, params,
-                order_by="datetime_obs DESC"
+                order_by=f"ABS(mjd_start - {meta['mjd_start']})" # Order by closest in time
             ))
 
             return rows
@@ -132,7 +135,7 @@ Basic Queries
     rows = list(db.table.rows_where(
         "cal_type = :type",
         {"type": "dark"},
-        order_by="datetime_obs DESC"
+        order_by=f"mjd_start DESC"
     ))
 
 Conditional Queries
@@ -150,15 +153,14 @@ Conditional Queries
     rows = list(db.table.rows_where(
         """cal_type = :type 
            AND instrument_era = :era 
-           AND datetime_obs > :date""",
+           AND datetime_obs > :date""", # Or mjd_start
         {"type": "dark", "era": "0.0.1", "date": "2024-01-01T00:00:00.000"}
     ))
 
-Aggregation and Min/Max
------------------------
+Sorting and More Complex Queries
+--------------------------------
 
-Additional filtering can be done after querying using Python built-ins.
-ISO datetime strings can be compared lexicographically.
+Additional filtering can always be done after querying using Python built-ins.
 
 .. code-block:: python
 
@@ -166,20 +168,8 @@ ISO datetime strings can be compared lexicographically.
     latest = db.table.rows_where(
         "cal_type = :type",
         {"type": "dark"},
-        order_by="datetime_obs DESC",
+        order_by=f"ABS(mjd_start - {meta['mjd_start']})", # Closest in time
         limit=1
-    )
-    latest_cal = next(latest, None)
-
-    # Find closest in datetime_obs to input's datetime_obs through post filtering
-    from datetime import datetime
-    candidates = list(db["table"].rows_where("cal_type = :type", {"type": "dark"}))
-    target_dt = datetime.fromisoformat(input_metadata["datetime_obs"])
-    closest = min(
-        candidates,
-        key=lambda r: abs(
-            datetime.fromisoformat(r["datetime_obs"]) - target_dt
-        )
     )
 
 For complete sqlite-utils documentation, see https://sqlite-utils.datasette.io/en/stable/python-api.html

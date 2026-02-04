@@ -72,7 +72,7 @@ In the case of two instruments HISPEC and Liger, the calibration cache directory
             └── hispec_calibrations.db
             └── liger_calibrations.db
 
-The ``calibrations`` and ``database`` subdirectories are created automatically. A SQLite database file is created in the ``database`` subdirectory when the store is initialized if the specified database file does not already exist. Calibration files are stored in subdirectories named after the instrument within the ``calibrations`` directory.
+The ``calibrations`` and ``database`` subdirectories are created automatically. A SQLite database file is created in the ``database`` subdirectory when the store is initialized if the specified database file does not already exist. Calibration files are stored in subdirectories named after the instrument within the ``calibrations`` directory and is also created automatically.
 
 Calibration Data Structure
 --------------------------
