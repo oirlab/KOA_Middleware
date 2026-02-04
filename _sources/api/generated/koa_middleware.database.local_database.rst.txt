@@ -1,0 +1,12 @@
+﻿koa\_middleware.database.local\_database
+========================================
+
+.. automodule:: koa_middleware.database.local_database
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      LocalCalibrationDB
+   
