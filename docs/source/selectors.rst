@@ -104,7 +104,6 @@ Once you've defined a selector, use it with the :py:class:`~koa_middleware.store
         calibration_filepath, calibration_record = store.select_and_get_calibration(
             input_metadata,
             selector,
-            return_record=True
         )
         
         print(f"Using calibration: {calibration_record['id']}")
