@@ -1,0 +1,12 @@
+﻿koa\_middleware.database.remote\_database
+=========================================
+
+.. automodule:: koa_middleware.database.remote_database
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RemoteCalibrationDB
+   
