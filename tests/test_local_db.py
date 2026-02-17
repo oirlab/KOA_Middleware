@@ -58,7 +58,7 @@ def test_local_db(tmp_path):
     ) as store:
 
         # Ensure clean DB state
-        store.local_db._reset()
+        store.local_db._reset(confirm=True)
 
         dt_before_register = datetime.datetime.now().isoformat(timespec='milliseconds')
 
@@ -71,7 +71,7 @@ def test_local_db(tmp_path):
                 cal_type="dark",
                 datetime_obs=dt_obs,
             )
-            local_path, _ = store.register_local_calibration(model)
+            local_path, _ = store.register_calibration(model, origin='LOCAL')
             assert os.path.isfile(local_path), f"Calibration file not saved: {local_path}"
 
         dt_after_register = datetime.datetime.now().isoformat()
@@ -132,7 +132,7 @@ def test_populate_local_db_from_cache(tmp_path):
     ) as store:
 
         # Ensure clean DB state
-        store.local_db._reset()
+        store.local_db._reset(confirm=True)
 
         # Populate local DB from existing cache
         store.populate_local_db_from_cache(models)
@@ -145,7 +145,7 @@ def test_populate_local_db_from_cache(tmp_path):
             assert len(matching) == 1
 
         # Ensure clean DB state
-        store.local_db._reset()
+        store.local_db._reset(confirm=True)
 
         # Populate local DB from existing cache
         store.populate_local_db_from_cache(models)

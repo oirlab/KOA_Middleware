@@ -1,6 +1,5 @@
 from .database import LocalCalibrationDB
-
-import re
+import os
 
 
 __all__ = ['CalibrationSelector']
@@ -20,9 +19,21 @@ class CalibrationSelector:
 
     Optional methods to override:
         - ``select_fallback``:  Provide a fallback selection mechanism if no candidates are found.
-        - ``select_best``: Choose the best calibration(s) from the list of candidates. By default, this method returns the first candidate if it's a list, or the input as is otherwise.
+        - ``select_best``: Choose the best calibration(s) from the list of candidates. See method for default behavior.
         - ``_select``: Customize the overall selection workflow by combining candidate retrieval and best selection. This does not call ``select_fallback``; that is handled in ``select``.
     """
+
+    def __init__(
+        self, *args,
+        origin: str | None = None,
+        **kwargs
+    ):
+        if origin is None:
+            origin = os.getenv("KOA_CALIBRATION_ORIGIN", "ANY")
+        self.origin = origin.upper()
+
+        for kwarg in kwargs:
+            setattr(self, kwarg, kwargs[kwarg])
 
     def select(self, input, db : LocalCalibrationDB, **kwargs) -> dict | None:
         """
@@ -86,14 +97,14 @@ class CalibrationSelector:
         result = self.select_best(input, candidates, **kwargs)
         return result
 
-    def get_candidates(self, input, db : LocalCalibrationDB, **kwargs) -> list[dict]:
+    def get_candidates(self, input, db : LocalCalibrationDB, **kwargs) -> list[dict] | dict:
         """
         Primary method called to retrieve an initial set of candidate calibrations from the local DB.
         Subclasses *must* implement this method.
 
         Parameters
         ----------
-        input : dict
+        input
             The input object for which a calibration is to be selected.
             The exact type depends on the specific selector implementation.
         db : LocalCalibrationDB
@@ -103,23 +114,22 @@ class CalibrationSelector:
 
         Returns
         -------
-        list[dict]
-            A list of candidate calibration metadata dictionaries.
+        list[dict] | dict
+            A list of candidate calibration metadata records, or a single candidate records.
         """
         raise NotImplementedError(f"Class {self.__class__.__name__} must implement method get_candidates.")
     
-    def select_best(self, input, candidates : list[dict], **kwargs) -> dict | None:
+    def select_best(self, input, candidates : list[dict] | dict, **kwargs) -> dict | None:
         """
         Select the best calibration(s) based on the candidates.
-        By default, it returns the first candidate.
-        This can optionally be overridden by subclasses.
+        The default implementation simply returns the first candidate if candidates is a list, or the candidate itself if it's a dict.
         
         Parameters
         ----------
         input
             The input object for which a calibration is to be selected.
             The exact type depends on the specific selector implementation.
-        candidates : list[dict]
+        candidates : list[dict] | dict
             Candidate calibrations returned from `get_candidates()`.
         **kwargs
             Additional filtering parameters as necessary.
@@ -127,11 +137,11 @@ class CalibrationSelector:
         Returns
         -------
         dict | None
-            Selected calibration metadata dictionary, or None if no candidates available.
+            Selected calibration metadata record, or None if no candidates available.
         """
-        if isinstance(candidates, list):
-            return candidates[0] if candidates else None
-        return candidates
+        if isinstance(candidates, dict):
+            return candidates
+        return candidates[0] if candidates else None
     
     def select_fallback(self, input, db : LocalCalibrationDB, **kwargs) -> dict | None:
         """
@@ -152,37 +162,7 @@ class CalibrationSelector:
         Returns
         -------
         dict | None
-            Fallback calibration metadata dictionary, or None if not available.
+            Fallback calibration metadata record, or None if not available.
         """
         return None
     
-    import re
-
-    @staticmethod
-    def get_query_params(input: dict, sql: str, strict: bool = True) -> dict:
-        """
-        Extract only the SQL parameters used in the query from the input dict.
-
-        Parameters
-        ----------
-        input : dict
-            Input metadata dictionary.
-        sql : str
-            SQL query string to determine which parameters are needed.
-        strict : bool, optional
-            If True (default), raise an error if a placeholder in the SQL is missing from input.
-
-        Returns
-        -------
-        dict
-            Dictionary of query parameters for database querying.
-        """
-        placeholders = set(re.findall(r":([a-zA-Z_]\w*)", sql))
-        params_query = {k: v for k, v in input.items() if k in placeholders}
-
-        if strict:
-            missing = placeholders - params_query.keys()
-            if missing:
-                raise ValueError(f"Missing query parameters: {missing}")
-
-        return params_query

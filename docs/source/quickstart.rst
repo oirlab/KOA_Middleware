@@ -51,6 +51,9 @@ Additional parameters can be provided to :py:class:`~koa_middleware.store.Calibr
 - **KOA_CALIBRATIONS_URL** (Optional)
   Remote database URL. Default: Keck Observer API URL. Default is "https://www3.keck.hawaii.edu/api/calibrations", and will be replaced with the appropriate KOA URL in the future.
 
+- **KOA_CALIBRATIONS_ORIGIN** (Optional)
+  The origin to register calibrations under and retrieve calibrations for. If not set, origin must be passed into methods as needed.
+
 Calibration Cache Structure
 ---------------------------
 
@@ -141,7 +144,7 @@ Add a new calibration record to the local SQLite database:
         cache_dir=cache_dir,
         connect_remote=False
     ) as store:
-        store.register_local_calibration(cal_record)
+        store.register_calibration(cal_record, origin='LOCAL')
 
 
 Retrieve a Known Calibration

@@ -4,7 +4,7 @@ import uuid
 from pathlib import Path
 
 from koa_middleware.store import CalibrationStore
-from .test_selectors import TestDarkSelector
+from .test_selectors import _TestDarkSelector
 
 @pytest.fixture
 def in_memory_calibration_store():
@@ -57,7 +57,7 @@ def test_minimal_koa_middleware_integration(in_memory_calibration_store):
     store.local_db.add(minimal_cal)
 
     # 3. Use a DarkSelector to retrieve the calibration
-    dark_selector = TestDarkSelector()
+    dark_selector = _TestDarkSelector()
     input_meta = {
         'instrument_name': 'test_instrument',
         'instrument_era': 'test_era_1',

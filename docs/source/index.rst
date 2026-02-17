@@ -8,8 +8,7 @@ Key Features
 ============
 
 - **Retrieve** calibrations from KOA for data processing and cache them locally for efficient reuse.
-- **Interface** for selecting the most appropriate calibration data for data processing with queries into a local SQLite database.
-- **Environment Configuration**: Uses environment variables for configuring behavior.
+- **Interface for selecting** the most appropriate calibration data for data processing with queries into a local SQLite database.
 
 See the :doc:`quickstart` guide to get started.
 
@@ -20,5 +19,6 @@ See the :doc:`quickstart` guide to get started.
    installation
    authentication
    quickstart
+   calibration_database
    selectors
    api/api
