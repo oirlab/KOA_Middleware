@@ -130,7 +130,7 @@ class CalibrationStore:
         else:
             self.remote_db = None
 
-        if sync_on_init:
+        if sync_on_init and self.remote_db is not None:
             self.sync_records_from_remote()
 
     def _init_cache(
