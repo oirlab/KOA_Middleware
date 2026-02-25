@@ -1,0 +1,12 @@
+﻿koa\_middleware.selector\_base
+==============================
+
+.. automodule:: koa_middleware.selector_base
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CalibrationSelector
+   

@@ -1,0 +1,12 @@
+﻿koa\_middleware.download
+========================
+
+.. automodule:: koa_middleware.download
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      download_koa
+   
