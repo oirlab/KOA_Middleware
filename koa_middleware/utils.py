@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 import os
 import hashlib
@@ -127,3 +127,44 @@ def generate_koa_filehandle(
     ymd = datetime_obs[:10].replace('-', '')
     koa_filehandle = f"/{instrument_name}/{year}/{ymd}/{koa_id}"
     return koa_filehandle
+
+def postgres_http_date_to_iso(date_str: str) -> str:
+    """
+    Return datetime as:
+        YYYY-MM-DDTHH:MM:SS.SSS
+
+    Parameters
+    ----------
+    date_str : str
+        The input date string, which can be in one of the following formats:
+    
+            - ISO 8601 strings
+            - Postgres HTTP-date strings like:
+            
+                'Thu, 12 Feb 2026 00:00:00 GMT'
+    
+    Returns
+    -------
+    str
+        The datetime string in ISO format.
+    """
+
+    # Try ISO first
+    try:
+        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    except ValueError:
+        # Try Postgres HTTP-date
+        try:
+            dt = datetime.strptime(
+                date_str,
+                "%a, %d %b %Y %H:%M:%S GMT"
+            ).replace(tzinfo=timezone.utc)
+        except ValueError:
+            raise ValueError(f"Invalid datetime string: {date_str}")
+
+    # Convert to UTC if tz-aware
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc)
+
+    # Return exactly millisecond precision, no timezone
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}"

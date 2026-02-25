@@ -7,6 +7,8 @@ from sqlite_utils.db import NotFoundError
 
 from ..logging_utils import logger
 
+from ..utils import postgres_http_date_to_iso
+
 __all__ = ["LocalCalibrationDB"]
 
 _MIN_SCHEMA = {
@@ -287,6 +289,14 @@ class LocalCalibrationDB:
         items = [dict(item) for item in cals]
         if not items:
             return
+        
+        # HACK: Temporary hack to convert PostgreSQL datetime strings to ISO format.
+        # NOTE: Fix this on the backend, convert all timestamps to YYYY-MM-DDTHH:MM:SSS.SSS.
+        datetime_cols = ['datetime_obs', 'last_updated', 'last_processed']
+        for item in items:
+            for col in datetime_cols:
+                if col in item and item[col] is not None:
+                    item[col] = postgres_http_date_to_iso(item[col])
 
         # Use common last updated timestamp for all entries in this batch to ensure consistency
         last_updated = datetime.now().isoformat(timespec='milliseconds')
