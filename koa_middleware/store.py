@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Sequence
 
 from .utils import is_valid_uuid, generate_md5_file
@@ -78,7 +79,7 @@ class CalibrationStore:
         connect_remote : bool = True,
         use_cached : bool = None,
         origin : str | None = None,
-        sync_on_init : bool = False,
+        sync_on_init : bool = True,
     ):
         """
 
@@ -102,7 +103,7 @@ class CalibrationStore:
         origin : str | None, optional
             The origin to register calibrations under and retrieve calibrations for.
         sync_on_init : bool, optional
-            Whether to automatically synchronize records from the remote database upon initialization. Default is False.
+            Whether to automatically synchronize records from the remote database upon initialization. Default is True.
         """
         # Global control for using cached calibrations
         if use_cached is not None:
@@ -129,7 +130,7 @@ class CalibrationStore:
         else:
             self.remote_db = None
 
-        if sync_on_init:
+        if sync_on_init and self.remote_db is not None:
             self.sync_records_from_remote()
 
     def _init_cache(
@@ -255,12 +256,12 @@ class CalibrationStore:
                 - `dict`: The calibration metadata dictionary as added to the database.
         """
 
-        if self.calibration_in_cache(cal, mode='id'):
+        if self.calibration_record_in_cache(cal, mode='id'):
             msg = f"Calibration already exists in cache: {cal}! Skipping registration."
             logger.warning(msg)
             return None, None
         
-        if not new_version and self.calibration_in_cache(cal, mode='version-family'):
+        if not new_version and self.calibration_record_in_cache(cal, mode='version-family'):
             msg = f"Calibration already exists in cache: {cal}! Skipping registration."
             logger.warning(msg)
             return None, None
@@ -299,17 +300,43 @@ class CalibrationStore:
             - `str`: The absolute local file path where the calibration file is stored.
             - `dict`: The calibration metadata dictionary as stored in the local database.
         """
-        cal_record = self.calibration_in_cache(cal, mode='id')
-        if cal_record is not None and self.use_cached:
-            local_filepath = self._get_local_filepath(cal_record)
-            return local_filepath, cal_record
+
+        cal_record = self.calibration_record_in_cache(cal, mode='id')
+        
+        # In this case, cal is probably an ID someone found listed on KOA
+        if cal_record is None:
+            
+            if self.remote_db is None:
+                msg = f"Calibration record not found in cache for {cal}, and no remote DB connection available to retrieve it."
+                logger.error(msg)
+                raise ValueError(msg)
+            
+            logger.info(f"Calibration record not found in cache for {cal}. Checking Remote DB...")
+            cal_id = cal['id'] if isinstance(cal, dict) else cal
+            assert is_valid_uuid(cal_id), f"Invalid calibration ID: {cal_id}"
+            cal_record_remote = self.remote_db.query(cal_id=cal_id)
+            if cal_record_remote is not None:
+                logger.info(f"Calibration record found in Remote DB for {cal_id}. Adding record to local DB.")
+                self.local_db.add(cal_record_remote)
+                cal_record = cal_record_remote
+            else:
+                msg = f"Calibration record not found in Remote DB for {cal_id}"
+                logger.error(msg)
+                raise ValueError(msg)
+            
         else:
-            breakpoint()
-            logger.info("Calibration not found in cache, downloading...")
-            local_filepath, cal_record = self.download_calibration(
-                cal, add_local=True
-            )
-        return local_filepath, cal_record
+
+            logger.info(f"Calibration record found in local cache for {cal_record['filename']}.")
+
+            local_filepath = self.calibration_file_in_cache(cal_record)
+
+            if local_filepath is not None:
+                return local_filepath, cal_record
+            else:
+                logger.info("Calibration not found in cache, downloading...")
+                local_filepath = self.download_calibration_file(cal_record)
+
+            return local_filepath, cal_record
     
     def get_missing_local_files(self) -> list[dict]:
         """
@@ -339,8 +366,46 @@ class CalibrationStore:
                 missing_files.append(cal_record)
 
         return missing_files
+    
+    def calibration_file_in_cache(self, cal : dict | str | SupportsCalibrationIO, filename : str | None = None) -> str | None:
+        """
+        Checks if a calibration file is already present in the local cache.
 
-    def calibration_in_cache(
+        Parameters
+        ----------
+        cal : dict | str | SupportsCalibrationIO
+            Can be one of:
+                - `str` : A calibration ID string or filepath.
+                - `dict` : A calibration metadata dict.
+                - `SupportsCalibrationIO` : A calibration data model instance.
+        filename : str | None
+            The filename to check for. If None, the filename will be extracted from the input `cal` parameter.
+
+        Returns
+        -------
+        filepath : str | None
+            The absolute local file path if the calibration file is found in the cache, otherwise None.
+        """
+        if filename is None:
+            if isinstance(cal, SupportsCalibrationIO):
+                cal_record = cal.to_record()
+                filename = cal_record.get("filename")
+            elif isinstance(cal, dict):
+                filename = cal.get("filename")
+            elif isinstance(cal, str):
+                filename = os.path.basename(cal)
+            else:
+                raise ValueError(
+                    "Invalid input type for calibration. Must be a DataModel, dict, or filepath string."
+                )
+        
+        local_filepath = os.path.join(self.data_dir, filename)
+        if os.path.isfile(local_filepath):
+            return local_filepath
+        else:
+            return None
+
+    def calibration_record_in_cache(
         self,
         cal: dict | str | SupportsCalibrationIO,
         mode: str = 'id'
@@ -376,17 +441,17 @@ class CalibrationStore:
 
         # Check by ID
         if mode == 'id':
-            return self._calibration_in_cache_id(cal)
+            return self._calibration_record_in_cache_id(cal)
         # Check by ID
         if mode == 'version-family':
-            return self._calibration_in_cache_id(cal)
+            return self._calibration_record_in_cache_version_family(cal)
         if mode == 'md5':
-            return self._calibration_in_cache_md5(cal)
+            return self._calibration_record_in_cache_md5(cal)
         raise ValueError(
             f"Invalid mode: {mode}. Must be one of 'id', 'family+version', or 'md5'."
         )
     
-    def _calibration_in_cache_id(self, calibration: dict | str | SupportsCalibrationIO) -> dict | None:
+    def _calibration_record_in_cache_id(self, calibration: dict | str | SupportsCalibrationIO) -> dict | None:
         """
         Checks if a calibration is already present in the local cache by its calibration ID.
 
@@ -419,7 +484,7 @@ class CalibrationStore:
             )
         return self.local_db.query(cal_id=cal_id)
 
-    def _calibration_in_cache_filename(self, cal : dict | SupportsCalibrationIO):
+    def _calibration_record_in_cache_filename(self, cal : dict | SupportsCalibrationIO):
         """
         Checks if a calibration is already present in the local cache by its filename.
 
@@ -451,7 +516,7 @@ class CalibrationStore:
         
         return self.local_db.query(filename=filename)
 
-    def _calibration_in_cache_version_family(
+    def _calibration_record_in_cache_version_family(
         self,
         cal : dict | SupportsCalibrationIO,
         include_version : bool = False
@@ -459,7 +524,7 @@ class CalibrationStore:
         """
         Checks if a calibration is already present in the local cache by its version family values and optionally version.
 
-        This is expected to have the same output as _calibration_in_cache_filename.
+        This is expected to have the same output as _calibration_record_in_cache_filename.
 
         Parameters
         ----------
@@ -518,10 +583,9 @@ class CalibrationStore:
         else:
             return None
 
-    def download_calibration(
+    def download_calibration_file(
         self,
         calibration: dict | str,
-        add_local : bool = True
     ) -> str:
         """
         Downloads a calibration file from the remote DB.
@@ -544,8 +608,6 @@ class CalibrationStore:
         elif isinstance(calibration, str):
             assert is_valid_uuid(calibration)
             cal_id = calibration
-            if add_local:
-                cal_record = self.remote_db.query(cal_id=cal_id)
         else:
             msg = "Calibration must be a dict or str."
             logger.error(msg)
@@ -554,9 +616,7 @@ class CalibrationStore:
             cal_id=cal_id,
             output_dir=self.data_dir
         )
-        if add_local:
-            cal_record = self.local_db.add(cal_record)
-        return filepath_local, cal_record
+        return filepath_local
 
     def get_missing_records(self, source : str = 'remote', mode : str = 'id') -> list[dict]:
         """
@@ -638,6 +698,7 @@ class CalibrationStore:
             A list of dictionaries representing calibration entries that were added to the local database during synchronization.
         """
         cals = self.get_missing_records(source='remote', mode=mode)
+
         if len(cals) > 0:
             cals = self.local_db.add(cals)
         return cals
@@ -678,6 +739,10 @@ class CalibrationStore:
         """
         Query calibrations from local or remote database.
 
+        Users can also query the local and remote databases directly using ``store.local_db.query()`` and ``store.remote_db.query()``.
+
+        This method may be removed in the future if not found useful.
+
         Parameters
         ----------
         source : str | None
@@ -702,7 +767,7 @@ class CalibrationStore:
             logger.error(msg)
             raise ValueError(msg)
 
-    def sync_to_remote(self, mode : str = 'id') -> list[dict]:
+    def sync_records_to_remote(self, mode : str = 'id') -> list[dict]:
         """
         Uploads local calibration entires to the remote DB.
 
@@ -721,10 +786,11 @@ class CalibrationStore:
             A list of dictionaries representing calibration entries that were added to the remote database during synchronization.
         """
         
-        # !!!! TODO !!!! : Upload the calibration files first.
+        # !!!! TODO !!!! : Upload the calibration files before calling this function.
         
         # Get missing
-        cals = self.get_missing_entries(source='remote', mode=mode)
+        cals = self.get_missing_records(source='local', mode=mode)
+
         if len(cals) > 0:
             for cal in cals:
                 self.remote_db.add(cal)
@@ -965,6 +1031,35 @@ class CalibrationStore:
                     f"Calibration records: {[dict(row) for row in rows]}"
                 )
         return bad_records
+    
+    def _reset_cache(self, confirm: bool = False, files : bool = True):
+        """
+        Reset the local calibration cache by clearing the local DB and optionally also deleting all files.
+
+        This only applies the the current instrument.
+
+        WARNING: This will permanently delete all cached calibration files. Use with caution.
+
+        Parameters
+        ----------
+        confirm : bool
+            A confirmation flag to prevent accidental deletion. Must be set to True to proceed with cache reset.
+        files : bool
+            Whether or not to also delete all cached calibration files. Defaults to True.
+        """
+        if not confirm:
+            logger.warning("Cache reset not confirmed. Set confirm=True to proceed with cache reset.")
+            return
+        
+        logger.info(f"Resetting local calibration DB for {self.instrument_name}")
+        self.local_db._reset(confirm=confirm)
+
+        if files:
+            logger.info(f"Deleting all cached calibration {self.instrument_name} files...")
+            if os.path.isdir(self.data_dir):
+                shutil.rmtree(self.data_dir)
+            os.makedirs(self.data_dir, exist_ok=True)
+            
 
     #### Misc. ####
     def __repr__(self):

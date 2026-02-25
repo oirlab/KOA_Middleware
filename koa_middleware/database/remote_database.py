@@ -1,6 +1,7 @@
 from ..keck_client import KeckObserverAuthClient
 from ..logging_utils import logger
 import requests
+from tqdm import tqdm
 import zipfile
 import os
 
@@ -34,6 +35,68 @@ class RemoteCalibrationDB:
     #### DOWNLOAD CALS ####
     #######################
 
+    # def download_calibration(
+    #     self,
+    #     cal_id: str,
+    #     output_dir: str,
+    #     output_path: str | None = None,
+    # ) -> str:
+    #     os.makedirs(output_dir, exist_ok=True)
+
+    #     route = f"{self.calibrations_url}/{self.instrument_name}/download"
+    #     r = requests.get(
+    #         route,
+    #         params={"cal_id": cal_id},
+    #         cookies=self.auth_client.cookies
+    #     )
+
+    #     if r.status_code != 200:
+    #         msg = f"Failed to download calibration {cal_id}: {r.status_code} {r.text}"
+    #         logger.error(msg)
+    #         raise RuntimeError(msg)
+
+    #     # Save zip to temporary location
+    #     temp_zip = os.path.join(output_dir, f"{cal_id}.zip")
+    #     with open(temp_zip, "wb") as f:
+    #         f.write(r.content)
+
+    #     # Extract and validate zip
+    #     try:
+    #         with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
+    #             extracted_files = zip_ref.namelist()
+                
+    #             if not extracted_files:
+    #                 msg = f"Zip archive for calibration {cal_id} is empty"
+    #                 logger.error(msg)
+    #                 raise RuntimeError(msg)
+                
+    #             filename_in_zip = next(
+    #                 (f for f in extracted_files if not f.endswith('/')),
+    #                 extracted_files[0]
+    #             )
+                
+    #             zip_ref.extractall(output_dir)
+                
+    #         # Determine final output path
+    #         if output_path is None:
+    #             output_path = os.path.join(output_dir, filename_in_zip)
+            
+    #         if not os.path.exists(output_path):
+    #             msg = f"Extracted calibration file not found at {output_path}"
+    #             logger.error(msg)
+    #             raise RuntimeError(msg)
+            
+    #         logger.info(f"Successfully downloaded calibration {cal_id} to {output_path}")
+    #         return output_path
+            
+    #     except zipfile.BadZipFile as e:
+    #         logger.error(f"Downloaded file {temp_zip} is not a valid zip archive: {e}")
+    #         raise RuntimeError(f"Invalid zip archive for calibration {cal_id}") from e
+    #     finally:
+    #         # Always delete the temp zip file
+    #         if os.path.exists(temp_zip):
+    #             os.remove(temp_zip)
+
     def download_calibration(
         self,
         cal_id: str,
@@ -46,7 +109,8 @@ class RemoteCalibrationDB:
         r = requests.get(
             route,
             params={"cal_id": cal_id},
-            cookies=self.auth_client.cookies
+            cookies=self.auth_client.cookies,
+            stream=True,
         )
 
         if r.status_code != 200:
@@ -54,12 +118,23 @@ class RemoteCalibrationDB:
             logger.error(msg)
             raise RuntimeError(msg)
 
-        # Save zip to temporary location
         temp_zip = os.path.join(output_dir, f"{cal_id}.zip")
-        with open(temp_zip, "wb") as f:
-            f.write(r.content)
 
-        # Extract and validate zip
+        total_size = int(r.headers.get("content-length", 0))
+        chunk_size = 8192
+
+        with open(temp_zip, "wb") as f, tqdm(
+            total=total_size,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+            desc=f"Downloading {cal_id}",
+        ) as pbar:
+            for chunk in r.iter_content(chunk_size=chunk_size):
+                if chunk:
+                    f.write(chunk)
+                    pbar.update(len(chunk))
+
         try:
             with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
                 extracted_files = zip_ref.namelist()
@@ -76,7 +151,6 @@ class RemoteCalibrationDB:
                 
                 zip_ref.extractall(output_dir)
                 
-            # Determine final output path
             if output_path is None:
                 output_path = os.path.join(output_dir, filename_in_zip)
             
@@ -92,7 +166,6 @@ class RemoteCalibrationDB:
             logger.error(f"Downloaded file {temp_zip} is not a valid zip archive: {e}")
             raise RuntimeError(f"Invalid zip archive for calibration {cal_id}") from e
         finally:
-            # Always delete the temp zip file
             if os.path.exists(temp_zip):
                 os.remove(temp_zip)
 
@@ -135,7 +208,10 @@ class RemoteCalibrationDB:
             msg = f"Failed to query metadata: {response.status_code} {response.text}"
             logger.error(msg)
             raise RuntimeError(msg)
-        return response.json()
+        out = response.json()
+        if isinstance(out, dict) and out.get('message') == 'No matching calibrations found.':
+            return []
+        return out
 
     def get_last_updated(self) -> str:
         """
@@ -169,8 +245,19 @@ class RemoteCalibrationDB:
             A dictionary or a list of dictionaries containing the calibration metadata to add.
             If a list is provided, each dictionary should represent a separate calibration entry.
         """
+        
         if isinstance(meta, dict):
             meta = [meta]
+
+        
+        # HACK: This is a temporary hack to convert boolean cols from 1/0 (sqlite) to True/False.
+        # NOTE: Consider implementing a conversion on the backend.
+        boolean_cols = ['master_cal']
+        for m in meta:
+            for col in boolean_cols:
+                if col in m:
+                    m[col] = bool(m[col])
+
         route = f"{self.calibrations_url}/{self.instrument_name.lower()}/add"
         response = requests.post(route, json=meta, cookies=self.auth_client.cookies)
         if response.status_code != 200:
