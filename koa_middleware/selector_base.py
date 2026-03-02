@@ -1,6 +1,8 @@
 from .database import LocalCalibrationDB
 import os
 
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['CalibrationSelector']
 
@@ -35,7 +37,7 @@ class CalibrationSelector:
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
 
-    def select(self, input, db : LocalCalibrationDB, **kwargs) -> dict | None:
+    def select(self, input, db : LocalCalibrationDB) -> dict | None:
         """
         Selects the best calibration for the given input data.
 
@@ -55,8 +57,6 @@ class CalibrationSelector:
             The exact type depends on the specific selector implementation.
         db : LocalCalibrationDB
             The database instance for querying. 
-        **kwargs
-            Additional filtering parameters as necessary passed to ``self._select``.
 
         Returns
         -------
@@ -64,12 +64,12 @@ class CalibrationSelector:
             The selected calibration metadata dictionary.
             Returns `None` if no suitable calibration is found, even after fallback.
         """
-        result = self._select(input, db, **kwargs)
+        result = self._select(input, db)
         if result is None:
-            result = self.select_fallback(input, db, **kwargs)
+            result = self.select_fallback(input, db)
         return result
 
-    def _select(self, input, db : LocalCalibrationDB, **kwargs) -> dict | None:
+    def _select(self, input, db : LocalCalibrationDB) -> dict | None:
         """
         Internal method to perform the core calibration selection logic.
 
@@ -85,19 +85,17 @@ class CalibrationSelector:
             The exact type depends on the specific selector implementation.
         db : LocalCalibrationDB
             The database instance for querying. 
-        **kwargs
-            Additional filtering parameters as necessary. Passed to both ``get_candidates`` and ``select_best``.
 
         Returns
         -------
         result : dict | None
             The selected calibration metadata dictionary.
         """
-        candidates = self.get_candidates(input, db, **kwargs)
-        result = self.select_best(input, candidates, **kwargs)
+        candidates = self.get_candidates(input, db)
+        result = self.select_best(input, candidates)
         return result
 
-    def get_candidates(self, input, db : LocalCalibrationDB, **kwargs) -> list[dict] | dict:
+    def get_candidates(self, input, db : LocalCalibrationDB) -> list[dict] | dict:
         """
         Primary method called to retrieve an initial set of candidate calibrations from the local DB.
         Subclasses *must* implement this method.
@@ -109,8 +107,6 @@ class CalibrationSelector:
             The exact type depends on the specific selector implementation.
         db : LocalCalibrationDB
             The database instance for querying.
-        **kwargs
-            Additional filtering parameters as necessary.
 
         Returns
         -------
@@ -119,7 +115,7 @@ class CalibrationSelector:
         """
         raise NotImplementedError(f"Class {self.__class__.__name__} must implement method get_candidates.")
     
-    def select_best(self, input, candidates : list[dict] | dict, **kwargs) -> dict | None:
+    def select_best(self, input, candidates : list[dict] | dict) -> dict | None:
         """
         Select the best calibration(s) based on the candidates.
         The default implementation simply returns the first candidate if candidates is a list, or the candidate itself if it's a dict.
@@ -131,8 +127,6 @@ class CalibrationSelector:
             The exact type depends on the specific selector implementation.
         candidates : list[dict] | dict
             Candidate calibrations returned from `get_candidates()`.
-        **kwargs
-            Additional filtering parameters as necessary.
         
         Returns
         -------
@@ -143,7 +137,7 @@ class CalibrationSelector:
             return candidates
         return candidates[0] if candidates else None
     
-    def select_fallback(self, input, db : LocalCalibrationDB, **kwargs) -> dict | None:
+    def select_fallback(self, input, db : LocalCalibrationDB) -> dict | None:
         """
         Select a fallback calibration if no suitable candidates are found.
         Default implementation returns ``None``.
@@ -156,8 +150,6 @@ class CalibrationSelector:
             The exact type depends on the specific selector implementation.
         db : LocalCalibrationDB
             Database instance for querying.
-        **kwargs
-            Additional filtering parameters as necessary.
         
         Returns
         -------
@@ -165,4 +157,8 @@ class CalibrationSelector:
             Fallback calibration metadata record, or None if not available.
         """
         return None
+    
+    def __repr__(self):
+        attrs = ', '.join([f'{k}={v}' for k, v in self.__dict__.items()])
+        return f"{self.__class__.__name__}({attrs})"
     

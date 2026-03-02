@@ -1,7 +1,9 @@
 import os
 import requests
 from tqdm import tqdm
-from .logging_utils import logger
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 login_url = "https://koa.ipac.caltech.edu/cgi-bin/KoaAPI/nph-koaLogin?"
