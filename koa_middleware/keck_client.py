@@ -6,7 +6,8 @@ from pathlib import Path
 import requests
 from platformdirs import user_state_dir
 
-from .logging_utils import logger
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ["KeckObserverAuthClient"]
 

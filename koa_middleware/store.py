@@ -6,8 +6,11 @@ from .utils import is_valid_uuid, generate_md5_file
 from .selector_base import CalibrationSelector
 from .database import LocalCalibrationDB, RemoteCalibrationDB
 from .datamodel_protocol import SupportsCalibrationIO
-from .logging_utils import logger
+
 from .utils import get_env_var_bool
+
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['CalibrationStore']
 
@@ -226,7 +229,9 @@ class CalibrationStore:
             >>> print(f"Calibration file: {local_filepath}")
             >>> print(f"Calibration ID: {calibration_record['id']}")
         """
-        result = selector.select(input, self.local_db, **kwargs)
+        logger.info(f"Selecting calibration for input={input.get('filename')} using {selector}")
+        result = selector.select(input, self.local_db)
+        logger.info(f"Selected calibration filename={result['filename']} ID={result['id']}")
         result = self.get_calibration(result)
         return result
     
@@ -304,39 +309,43 @@ class CalibrationStore:
         cal_record = self.calibration_record_in_cache(cal, mode='id')
         
         # In this case, cal is probably an ID someone found listed on KOA
-        if cal_record is None:
+        if cal_record is not None:
+            
+            logger.info(f"Record found in local cache for filename={cal_record.get('filename')} ID={cal_record.get('id')}.")
+        
+        else:
             
             if self.remote_db is None:
-                msg = f"Calibration record not found in cache for {cal}, and no remote DB connection available to retrieve it."
+                msg = f"Record not found in cache for input={cal}, and no remote DB connection available to retrieve it."
                 logger.error(msg)
                 raise ValueError(msg)
             
-            logger.info(f"Calibration record not found in cache for {cal}. Checking Remote DB...")
+            logger.info(f"Record not found in local DB for ID={cal_id} Checking remote DB...")
+
             cal_id = cal['id'] if isinstance(cal, dict) else cal
             assert is_valid_uuid(cal_id), f"Invalid calibration ID: {cal_id}"
             cal_record_remote = self.remote_db.query(cal_id=cal_id)
+
             if cal_record_remote is not None:
-                logger.info(f"Calibration record found in Remote DB for {cal_id}. Adding record to local DB.")
+                logger.info(f"Record found in remote DB for filename={cal_record_remote.get('filename')} ID={cal_id}. Adding record to local DB.")
                 self.local_db.add(cal_record_remote)
                 cal_record = cal_record_remote
             else:
-                msg = f"Calibration record not found in Remote DB for {cal_id}"
+                msg = f"Record not found in remote DB for filename={cal_record_remote.get('filename')} ID={cal_id}."
                 logger.error(msg)
                 raise ValueError(msg)
-            
-        else:
 
-            logger.info(f"Calibration record found in local cache for {cal_record['filename']}.")
+        # Check if file is cached locally, and download if not
+        local_filepath = self.calibration_file_in_cache(cal_record)
 
-            local_filepath = self.calibration_file_in_cache(cal_record)
-
-            if local_filepath is not None:
-                return local_filepath, cal_record
-            else:
-                logger.info("Calibration not found in cache, downloading...")
-                local_filepath = self.download_calibration_file(cal_record)
-
+        if local_filepath is not None:
+            logger.info(f"File found in cache for filename={cal_record['filename']} ID={cal_record['id']}.")
             return local_filepath, cal_record
+        else:
+            logger.info(f"File not found in cache for filename={cal_record['filename']} ID={cal_record['id']}. Downloading...")
+            local_filepath = self.download_calibration_file(cal_record)
+
+        return local_filepath, cal_record
     
     def get_missing_local_files(self) -> list[dict]:
         """
@@ -612,7 +621,7 @@ class CalibrationStore:
             msg = "Calibration must be a dict or str."
             logger.error(msg)
             raise TypeError(msg)
-        filepath_local = self.remote_db.download_calibration(
+        filepath_local = self.remote_db.download_calibration_file(
             cal_id=cal_id,
             output_dir=self.data_dir
         )

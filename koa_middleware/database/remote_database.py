@@ -97,7 +97,7 @@ class RemoteCalibrationDB:
     #         if os.path.exists(temp_zip):
     #             os.remove(temp_zip)
 
-    def download_calibration(
+    def download_calibration_file(
         self,
         cal_id: str,
         output_dir: str,
