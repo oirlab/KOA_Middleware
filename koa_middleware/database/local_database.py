@@ -5,7 +5,8 @@ from datetime import datetime
 from sqlite_utils import Database
 from sqlite_utils.db import NotFoundError
 
-from ..logging_utils import logger
+import logging
+logger = logging.getLogger(__name__)
 
 from ..utils import postgres_http_date_to_iso
 
@@ -57,7 +58,7 @@ class LocalCalibrationDB:
             with self.db.conn:
                 yield
         except Exception:
-            logger.exception("Transaction failed, rolling back.")
+            logger.exception(f"Transaction failed on table {self.table_name!r}, rolling back.")
 
     def get_last_updated(self) -> str | None:
         """
@@ -239,6 +240,7 @@ class LocalCalibrationDB:
             row = self.table.get(cal_id)
             return dict(row) if row else None
         except NotFoundError as e:
+            logger.info(f"Calibration ID {cal_id!r} not found in table {self.table_name!r}.")
             return None
         
     def query_filename(self, filename: str) -> dict | None:
@@ -309,9 +311,12 @@ class LocalCalibrationDB:
 
             n = len(items)
             if n == 1:
-                logger.info(f"Inserting {n} calibration entry in local DB: {items[0]['filename']}")
+                logger.info(f"Adding to local cal DB: filename={items[0]['filename']} ID={items[0]['id']}")
             else:
-                logger.info(f"Inserting {len(items)} calibration entries in local DB.")
+                s = f"Adding {len(items)} items into local cal DB:"
+                for i, item in enumerate(items):
+                    s += f"\n  {i+1} - filename={item['filename']} ID={item['id']}"
+                logger.info(s)
 
             self.table.insert_all(
                 items,
@@ -335,6 +340,7 @@ class LocalCalibrationDB:
         """
         try:
             self.table.delete(cal_id)
+            logger.info(f"Deleted calibration ID {cal_id!r} from table {self.table_name!r}.")
         except NotFoundError:
             logger.warning(f"Calibration ID {cal_id} not found in the database, cannot delete.")
 
@@ -347,7 +353,9 @@ class LocalCalibrationDB:
             logger.warning("Reset not confirmed. To reset the database, call _reset with confirm=True.")
             return
         if self.table.exists():
+            logger.info(f"Dropping table {self.table_name!r}...")
             self.table.drop()
+        logger.info(f"Recreating table {self.table_name!r} with minimal schema.")
         self.table.create(
             _MIN_SCHEMA,
             pk="id",

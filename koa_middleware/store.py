@@ -5,7 +5,7 @@ from typing import Sequence
 from .utils import is_valid_uuid, generate_md5_file
 from .selector_base import CalibrationSelector
 from .database import LocalCalibrationDB, RemoteCalibrationDB
-from .datamodel_protocol import SupportsCalibrationIO
+from .datamodel_protocol import SupportsCalibrationModelIO
 
 from .utils import get_env_var_bool
 
@@ -26,11 +26,9 @@ class CalibrationStore:
 
     Constructing this class sets up the necessary directory structure for caching calibration files and initializes the `LocalCalibrationDB` instance for managing the local SQLite database.
 
-        - Creates the `cache_dir`, `cache_dir/calibrations/<instrument_name>`, and `cache_dir/database`
-            directories if they do not already exist.
-            
-        - Initializes `self.local_db` with a `LocalCalibrationDB` instance.
-        - Initializes `self.remote_db` with a `RemoteCalibrationDB` instance (if connect_remote is True).
+        - Creates the ``cache_dir``, ``cache_dir/calibrations/<instrument_name>``, and ``cache_dir/database`` directories if they do not already exist.
+        - Initializes ``self.local_db`` with a `LocalCalibrationDB` instance.
+        - Initializes ``self.remote_db`` with a `RemoteCalibrationDB` instance (if connect_remote is True).
 
     Parameters
     ----------
@@ -42,8 +40,8 @@ class CalibrationStore:
         environment variable. Required either as parameter or environment variable.
     local_database_filename : str | None
         The filename for the local SQLite database. If None, uses the 
-        KOA_LOCAL_DATABASE_FILENAME environment variable. If that is also None, 
-        defaults to `f'{instrument_name.lower()}_calibrations.db'`.
+        KOA_LOCAL_CALIBRATION_DATABASE_FILENAME environment variable. If that is also None, 
+        defaults to ``f'{instrument_name.lower()}_calibrations.db'``.
     connect_remote : bool, optional
         Set to False to skip initializing the remote database connection. Default is True.
 
@@ -51,11 +49,11 @@ class CalibrationStore:
     
     - KOA_CALIBRATION_CACHE (Required) Path to cached calibrations directory.
 
-    - KOA_LOCAL_DATABASE_FILENAME (Optional) Local SQLite database filename. Default: <instrument_name>_calibrations.db
+    - KOA_LOCAL_CALIBRATION_DATABASE_FILENAME (Optional) Local SQLite database filename. Default: <instrument_name>_calibrations.db
 
     - KOA_USE_CACHED_CALIBRATIONS (Optional) Use cached files ('true' or 'false'). Default: 'true'.
 
-    - KOA_LOCAL_DATABASE_TABLE_NAME (Optional) Local database table name. Default: <instrument_name>
+    - KOA_LOCAL_CALIBRATION_DATABASE_TABLE_NAME (Optional) Local database table name. Default: <instrument_name>
 
     - KOA_CALIBRATIONS_URL (Optional) Remote database URL. Default: Keck Observer API URL. Default is “https://www3.keck.hawaii.edu/api/calibrations”, and will be replaced with the appropriate KOA URL in the future.
 
@@ -96,7 +94,7 @@ class CalibrationStore:
             environment variable. Required either as parameter or environment variable.
         local_database_filename : str | None
             The filename for the local SQLite database. If None, uses the 
-            KOA_LOCAL_DATABASE_FILENAME environment variable. If that is also None, 
+            KOA_LOCAL_CALIBRATION_DATABASE_FILENAME environment variable. If that is also None, 
             defaults to `f'{instrument_name.lower()}_calibrations.db'`.
         connect_remote : bool, optional
             Set to False to skip initializing the remote database connection. Default is True.
@@ -144,7 +142,7 @@ class CalibrationStore:
 
         # Get local database filename
         if local_database_filename is None:
-            local_database_filename = os.environ.get('KOA_LOCAL_DATABASE_FILENAME')
+            local_database_filename = os.environ.get('KOA_LOCAL_CALIBRATION_DATABASE_FILENAME')
         if local_database_filename is None or local_database_filename == '':
             local_database_filename = f'{self.instrument_name.lower()}_calibrations.db'
 
@@ -175,12 +173,17 @@ class CalibrationStore:
             local_database_filename
         )
         table_name = os.environ.get(
-            'KOA_LOCAL_DATABASE_TABLE_NAME',
+            'KOA_LOCAL_CALIBRATION_DATABASE_TABLE_NAME',
             f"{self.instrument_name.lower()}"
         )
         self.local_db = LocalCalibrationDB(
             db_path=local_db_filepath,
             table_name=table_name,
+        )
+        logger.info(
+            f"Cache initialized: cache_dir={self.cache_dir!r}, "
+            f"data_dir={self.data_dir!r}, "
+            f"db={local_db_filepath!r}, table={table_name!r}"
         )
 
     def _init_remote_db(self):
@@ -199,7 +202,6 @@ class CalibrationStore:
         self,
         input,
         selector : CalibrationSelector,
-        **kwargs
     ) -> tuple[str, dict]:
         """
         Selects the best calibration based on input data and a selection rule, then retrieves it.
@@ -214,17 +216,15 @@ class CalibrationStore:
             The input data product for which a calibration is needed.
         selector : CalibrationSelector
             An instance of a ``CalibrationSelector`` class.
-        **kwargs
-            Additional parameters to pass to the ``selector.select()`` method.
 
         Returns
         -------
         tuple[str, dict]
-            - `str`: The local file path of the retrieved calibration file.
-            - `dict`: The record of the selected calibration from the local database.
+            - ``str``: The local file path of the retrieved calibration file.
+            - ``dict``: The record of the selected calibration from the local database.
 
         Example:
-            >>> # Assuming 'my_input_data' and 'my_selector' are defined
+            >>> # Assuming ``my_input_data`` and ``my_selector`` are defined
             >>> local_filepath, calibration_record = store.select_and_get_calibration(my_input_data, my_selector)
             >>> print(f"Calibration file: {local_filepath}")
             >>> print(f"Calibration ID: {calibration_record['id']}")
@@ -237,16 +237,18 @@ class CalibrationStore:
     
     def register_calibration(
         self,
-        cal : SupportsCalibrationIO,
+        cal : SupportsCalibrationModelIO,
         origin : str | None = None,
         new_version : bool = False,
     ) -> tuple[str, dict]:
         """
         Registers a calibration to the local cache and metadata database.
 
+        TODO: Check if file exists? Behavior of model.save is undefined and may have unwanted side effects.
+
         Parameters
         ----------
-        cal : SupportsCalibrationIO
+        cal : SupportsCalibrationModelIO
             The datamodel object to register.
         origin : str, optional
             The origin to register the calibration under.
@@ -257,8 +259,8 @@ class CalibrationStore:
         -------
         tuple[str, dict]
             A tuple containing:
-                - `str`: The local file path where the calibration was saved.
-                - `dict`: The calibration metadata dictionary as added to the database.
+                - ``str``: The local file path where the calibration was saved.
+                - ``dict``: The calibration metadata dictionary as added to the database.
         """
 
         if self.calibration_record_in_cache(cal, mode='id'):
@@ -270,23 +272,99 @@ class CalibrationStore:
             msg = f"Calibration already exists in cache: {cal}! Skipping registration."
             logger.warning(msg)
             return None, None
-        
-        cal_record = cal.to_record()
 
-        # Generate version and add to metadata
-        if new_version:
-            self.generate_calibration_version(cal_record, origin=origin)
-        
+        # Prepare calibration record with version
+        cal_record = self._prepare_cal_record(cal, origin=origin, new_version=new_version)
+
+        # Finalize the datamodel
+        self._finalize_cal_model(cal, cal_version=cal_record.get('cal_version'), origin=origin)
+
         # Save to local cache
         local_filepath = cal.save(output_dir=self.data_dir)
+        logger.info(f"Saved calibration with ID={cal_record.get('id')} to {local_filepath}.")
 
-        # Generate MD5 and add to record
-        cal_record['file_md5'] = generate_md5_file(local_filepath)
+        # Finalize with MD5 after saving file to disk
+        self._finalize_cal_record(cal_record)
 
         # Add new record to local DB
         cal_record_added = self.local_db.add(cal_record)
+        logger.info(
+            f"Successfully registered calibration "
+            f"filename={cal_record_added.get('filename')} ID={cal_record_added.get('id')}."
+        )
 
         return local_filepath, cal_record_added
+    
+    def _finalize_cal_model(self, cal: SupportsCalibrationModelIO, cal_version : str, origin: str | None) -> None:
+        """
+        Finalize a calibration model before saving to disk.
+
+        Parameters
+        ----------
+        cal : SupportsCalibrationModelIO
+            The calibration model to finalize.
+
+        Returns
+        -------
+        None
+        """
+        return cal
+
+    def record_from(self, cal : dict | SupportsCalibrationModelIO) -> dict:
+        """
+        Extracts a calibration record dictionary from a given input.
+
+        Parameters
+        ----------
+        cal : dict | SupportsCalibrationModelIO
+            The input from which to extract the calibration record. Can be a dict or any object with a `to_record()` method.
+
+        Returns
+        -------
+        dict
+            A dictionary representing the calibration record.
+
+        Raises
+        ------
+        ValueError
+            If the input type is invalid or if the object does not have a `to_record()` method.
+        """
+        if isinstance(cal, dict):
+            return cal
+        elif isinstance(cal, SupportsCalibrationModelIO):
+            return cal.to_record()
+        else:
+            raise ValueError(
+                "Invalid input type for calibration. Must be a dict or an object with a to_record() method."
+            )
+
+    def _prepare_cal_record(
+        self,
+        cal : dict | SupportsCalibrationModelIO,
+        origin: str | None = None,
+        new_version: bool = False,
+    ) -> dict:
+        """
+        Extract and version a calibration's metadata record before saving to disk.
+        """
+        cal_record = self.record_from(cal)
+        if new_version:
+            cal_record['cal_version'] = self.generate_calibration_version(cal_record, origin=origin)
+        return cal_record
+
+    def _finalize_cal_record(
+        self,
+        cal_record: dict,
+    ) -> dict:
+        """
+        Finalize a calibration record after the file has been saved to disk.
+        Computes and adds the MD5 checksum.
+        """
+        local_filepath = self._get_local_filepath(cal_record)
+        cal_record['file_md5'] = generate_md5_file(local_filepath)
+        return cal_record
+    
+
 
     # Get a calibration and download if not cached
     def get_calibration(self, cal: dict | str) -> tuple[str, dict]:
@@ -302,8 +380,8 @@ class CalibrationStore:
         Returns
         -------
         result : tuple[str, dict]
-            - `str`: The absolute local file path where the calibration file is stored.
-            - `dict`: The calibration metadata dictionary as stored in the local database.
+            - ``str``: The absolute local file path where the calibration file is stored.
+            - ``dict``: The calibration metadata dictionary as stored in the local database.
         """
 
         cal_record = self.calibration_record_in_cache(cal, mode='id')
@@ -311,19 +389,19 @@ class CalibrationStore:
         # In this case, cal is probably an ID someone found listed on KOA
         if cal_record is not None:
             
-            logger.info(f"Record found in local cache for filename={cal_record.get('filename')} ID={cal_record.get('id')}.")
+            logger.debug(f"Record found in local cache for filename={cal_record.get('filename')} ID={cal_record.get('id')}.")
         
         else:
             
-            if self.remote_db is None:
-                msg = f"Record not found in cache for input={cal}, and no remote DB connection available to retrieve it."
-                logger.error(msg)
-                raise ValueError(msg)
-            
-            logger.info(f"Record not found in local DB for ID={cal_id} Checking remote DB...")
-
             cal_id = cal['id'] if isinstance(cal, dict) else cal
             assert is_valid_uuid(cal_id), f"Invalid calibration ID: {cal_id}"
+
+            if self.remote_db is None:
+                msg = f"Record not found in cache for ID={cal_id}, and no remote DB connection available to retrieve it."
+                logger.error(msg)
+                raise ValueError(msg)
+
+            logger.info(f"Record not found in local DB for ID={cal_id}. Checking remote DB...")
             cal_record_remote = self.remote_db.query(cal_id=cal_id)
 
             if cal_record_remote is not None:
@@ -331,7 +409,7 @@ class CalibrationStore:
                 self.local_db.add(cal_record_remote)
                 cal_record = cal_record_remote
             else:
-                msg = f"Record not found in remote DB for filename={cal_record_remote.get('filename')} ID={cal_id}."
+                msg = f"Record not found in remote DB for ID={cal_id}."
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -374,21 +452,28 @@ class CalibrationStore:
             if not os.path.isfile(local_filepath):
                 missing_files.append(cal_record)
 
+        if missing_files:
+            logger.warning(
+                f"Found {len(missing_files)} calibration file(s) recorded in the DB "
+                f"but missing from the local cache."
+            )
+        else:
+            logger.info("No missing local calibration files detected.")
         return missing_files
     
-    def calibration_file_in_cache(self, cal : dict | str | SupportsCalibrationIO, filename : str | None = None) -> str | None:
+    def calibration_file_in_cache(self, cal : dict | str | SupportsCalibrationModelIO, filename : str | None = None) -> str | None:
         """
         Checks if a calibration file is already present in the local cache.
 
         Parameters
         ----------
-        cal : dict | str | SupportsCalibrationIO
+        cal : dict | str | SupportsCalibrationModelIO
             Can be one of:
-                - `str` : A calibration ID string or filepath.
-                - `dict` : A calibration metadata dict.
-                - `SupportsCalibrationIO` : A calibration data model instance.
+                - ``str`` : A calibration ID string or filepath.
+                - ``dict`` : A calibration metadata dict.
+                - `SupportsCalibrationModelIO` : A calibration data model instance.
         filename : str | None
-            The filename to check for. If None, the filename will be extracted from the input `cal` parameter.
+            The filename to check for. If None, the filename will be extracted from the input ``cal`` parameter.
 
         Returns
         -------
@@ -396,7 +481,7 @@ class CalibrationStore:
             The absolute local file path if the calibration file is found in the cache, otherwise None.
         """
         if filename is None:
-            if isinstance(cal, SupportsCalibrationIO):
+            if isinstance(cal, SupportsCalibrationModelIO):
                 cal_record = cal.to_record()
                 filename = cal_record.get("filename")
             elif isinstance(cal, dict):
@@ -416,7 +501,7 @@ class CalibrationStore:
 
     def calibration_record_in_cache(
         self,
-        cal: dict | str | SupportsCalibrationIO,
+        cal: dict | str | SupportsCalibrationModelIO,
         mode: str = 'id'
     ) -> dict | None:
         """
@@ -424,11 +509,11 @@ class CalibrationStore:
 
         Parameters
         ----------
-        cal : dict | str | SupportsCalibrationIO
+        cal : dict | str | SupportsCalibrationModelIO
             Can be one of:
-                - `str` : A calibration ID string or filepath.
-                - `dict` : A calibration metadata dict.
-                - `SupportsCalibrationIO` : A calibration data model instance.
+                - ``str`` : A calibration ID string or filepath.
+                - ``dict`` : A calibration metadata dict.
+                - `SupportsCalibrationModelIO` : A calibration data model instance.
 
         mode : str
             The mode to check the cache. Can be one of:
@@ -460,17 +545,17 @@ class CalibrationStore:
             f"Invalid mode: {mode}. Must be one of 'id', 'family+version', or 'md5'."
         )
     
-    def _calibration_record_in_cache_id(self, calibration: dict | str | SupportsCalibrationIO) -> dict | None:
+    def _calibration_record_in_cache_id(self, calibration: dict | str | SupportsCalibrationModelIO) -> dict | None:
         """
         Checks if a calibration is already present in the local cache by its calibration ID.
 
         Parameters
         ----------
-        calibration : dict | str | SupportsCalibrationIO
+        calibration : dict | str | SupportsCalibrationModelIO
             Can be one of:
-                - `str` : A calibration ID string.
-                - `dict` : A record dict.
-                - SupportsCalibrationIO : A calibration data model instance.
+                - ``str`` : A calibration ID string.
+                - ``dict`` : A record dict.
+                - `SupportsCalibrationModelIO` : A calibration data model instance.
         
         Returns
         -------
@@ -483,7 +568,7 @@ class CalibrationStore:
 
         if isinstance(calibration, str) and is_valid_uuid(calibration):
             cal_id = calibration
-        elif isinstance(calibration, SupportsCalibrationIO):
+        elif isinstance(calibration, SupportsCalibrationModelIO):
             cal_id = calibration.to_record().get("id")
         elif isinstance(calibration, dict):
             cal_id = calibration["id"]
@@ -493,16 +578,16 @@ class CalibrationStore:
             )
         return self.local_db.query(cal_id=cal_id)
 
-    def _calibration_record_in_cache_filename(self, cal : dict | SupportsCalibrationIO):
+    def _calibration_record_in_cache_filename(self, cal : dict | SupportsCalibrationModelIO):
         """
         Checks if a calibration is already present in the local cache by its filename.
 
         Parameters
         ----------
-        cal : dict | SupportsCalibrationIO
+        cal : dict | SupportsCalibrationModelIO
             Can be one of:
-                - `dict` : A calibration metadata record.
-                - `SupportsCalibrationIO` : A calibration data model instance.
+                - ``dict`` : A calibration metadata record.
+                - `SupportsCalibrationModelIO` : A calibration data model instance.
 
         Returns
         -------
@@ -513,7 +598,7 @@ class CalibrationStore:
         if len(self.local_db) == 0:
             return None
         
-        if isinstance(cal, SupportsCalibrationIO):
+        if isinstance(cal, SupportsCalibrationModelIO):
             cal_record = cal.to_record()
             filename = cal_record.get("filename")
         elif isinstance(cal, dict):
@@ -527,7 +612,7 @@ class CalibrationStore:
 
     def _calibration_record_in_cache_version_family(
         self,
-        cal : dict | SupportsCalibrationIO,
+        cal : dict | SupportsCalibrationModelIO,
         include_version : bool = False
     ) -> dict | list[dict] | None:
         """
@@ -537,10 +622,10 @@ class CalibrationStore:
 
         Parameters
         ----------
-        cal : dict | SupportsCalibrationIO
+        cal : dict | SupportsCalibrationModelIO
             Can be one of:
-                - `dict` : A calibration metadata record.
-                - `SupportsCalibrationIO` : A calibration data model instance.
+                - ``dict`` : A calibration metadata record.
+                - `SupportsCalibrationModelIO` : A calibration data model instance.
         include_version : bool
             Whether or not to include the version (cal_version) in the check. If False, only check if any version exists and return them all. Defaults to False.
 
@@ -553,7 +638,7 @@ class CalibrationStore:
         if len(self.local_db) == 0:
             return None
         
-        if isinstance(cal, SupportsCalibrationIO):
+        if isinstance(cal, SupportsCalibrationModelIO):
             cal_record = cal.to_record()
             cal_version = cal_record.get('cal_version')
         elif isinstance(cal, dict):
@@ -640,7 +725,7 @@ class CalibrationStore:
             The mode to determine which entries are considered missing.
             Options are:
             - 'id' (default): Entries whose IDs are not present in the target database.
-            - 'last_updated': Entries with a `last_updated` timestamp greater than the most recent timestamp in the target database.
+            - 'last_updated': Entries with a ``last_updated`` timestamp greater than the most recent timestamp in the target database.
 
         Returns
         -------
@@ -684,7 +769,7 @@ class CalibrationStore:
             logger.error(msg)
             raise ValueError(msg)
 
-    def sync_records_from_remote(self, mode : str = 'id') -> list[dict]:
+    def sync_records_to_remote(self, cals, mode : str = 'id') -> list[dict]:
         """
         Synchronizes the local database with the remote database.
 
@@ -698,7 +783,7 @@ class CalibrationStore:
             The mode to determine which entries are considered missing.
             Options are:
             
-                - 'last_updated': Entries with a `last_updated` timestamp greater than the most recent timestamp in the local database.
+                - 'last_updated': Entries with a ``last_updated`` timestamp greater than the most recent timestamp in the local database.
                 - 'id' (default): Entries whose IDs are not present in the local database.
 
         Returns
@@ -706,10 +791,14 @@ class CalibrationStore:
         cals: list[dict]
             A list of dictionaries representing calibration entries that were added to the local database during synchronization.
         """
+        logger.info(f"Syncing records from remote DB (mode={mode!r})...")
         cals = self.get_missing_records(source='remote', mode=mode)
 
         if len(cals) > 0:
+            logger.info(f"Found {len(cals)} new record(s) from remote DB. Adding to local DB.")
             cals = self.local_db.add(cals)
+        else:
+            logger.info("Local DB is already up to date with remote DB.")
         return cals
 
     def get_last_updated(self, source : str | None = None, **kwargs) -> str | None:
@@ -785,7 +874,7 @@ class CalibrationStore:
         mode : str, optional
             The mode to determine which entries are considered missing.
             Options are:
-            - 'last_updated': Entries with a `last_updated` timestamp greater than the most recent timestamp in the local database.
+            - 'last_updated': Entries with a ``last_updated`` timestamp greater than the most recent timestamp in the local database.
                 
             - 'id' (default): Entries whose IDs are not present in the local database.
 
@@ -796,13 +885,18 @@ class CalibrationStore:
         """
         
         # !!!! TODO !!!! : Upload the calibration files before calling this function.
-        
-        # Get missing
+
+        logger.info(f"Syncing records to remote DB (mode={mode!r})...")
         cals = self.get_missing_records(source='local', mode=mode)
 
         if len(cals) > 0:
+            logger.info(f"Found {len(cals)} record(s) to upload to remote DB.")
             for cal in cals:
                 self.remote_db.add(cal)
+            logger.info(f"Successfully synced {len(cals)} record(s) to remote DB.")
+        else:
+            logger.info("Remote DB is already up to date with local DB.")
+        return cals
 
     #### Utility Methods ####
     def _get_local_filepath(self, calibration: dict | str) -> str:
@@ -835,13 +929,16 @@ class CalibrationStore:
             raise TypeError(msg)
         return os.path.join(self.data_dir, filename)
     
-    def populate_local_db_from_cache(self, calibrations : dict | SupportsCalibrationIO | Sequence[dict | SupportsCalibrationIO]) -> None:
+    def sync_records_from_cached_files(
+        self,
+        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO]
+    ) -> None:
         """
         Populates the local database from existing cached calibration files.
 
         Parameters
         ----------
-        calibrations : dict | SupportsCalibrationIO | Sequence[dict | SupportsCalibrationIO]
+        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO]
             A single calibration metadata dictionary or a data model instance,
             or a list of these.
 
@@ -849,11 +946,11 @@ class CalibrationStore:
         -----
         This method may be removed in the future if not found useful.
         """
-        if isinstance(calibrations, (dict, SupportsCalibrationIO)):
-            calibrations = [calibrations]
+        if isinstance(cals, (dict, SupportsCalibrationModelIO)):
+            cals = [cals]
         cal_records = []
-        for cal in calibrations:
-            if isinstance(cal, SupportsCalibrationIO):
+        for cal in cals:
+            if isinstance(cal, SupportsCalibrationModelIO):
                 cal_records.append(cal.to_record())
             else:
                 cal_records.append(cal)
@@ -917,6 +1014,10 @@ class CalibrationStore:
         if int(cal_version) > MAX_VERSION:
             raise ValueError(f"Invalid calibration version: {cal_version}")
 
+        logger.info(
+            f"Generated calibration version {cal_version!r} for "
+            f"{calibration.get('filename')!r} (origin={origin!r})."
+        )
         return cal_version
 
     def get_version_family_column_names(self, cal_type : str):
@@ -955,7 +1056,7 @@ class CalibrationStore:
     
     def _get_next_calibration_version(
         self,
-        cal : dict | SupportsCalibrationIO,
+        cal : dict | SupportsCalibrationModelIO,
         origin : str | None = None
     ) -> str:
         """
@@ -964,7 +1065,7 @@ class CalibrationStore:
 
         Parameters
         ----------
-        cal : dict | SupportsCalibrationIO
+        cal : dict | SupportsCalibrationModelIO
             The calibration metadata record for which to generate the version.
         origin : str, optional
             The origin to generate the version for. If None, uses self.origin.
@@ -979,12 +1080,12 @@ class CalibrationStore:
         if len(self.local_db) == 0:
             return "001"
         
-        if isinstance(cal, SupportsCalibrationIO):
+        if isinstance(cal, SupportsCalibrationModelIO):
             cal_record = cal.to_record()
         elif isinstance(cal, dict):
             cal_record = cal
         else:
-            raise TypeError(f"Expected SupportsCalibrationIO or dict, got {type(cal)}")
+            raise TypeError(f"Expected SupportsCalibrationModelIO or dict, got {type(cal)}")
 
         # Origin to generate a calibration version for.
         origin = origin or cal_record.get('origin') or self.origin
@@ -1005,7 +1106,7 @@ class CalibrationStore:
 
         sql = " AND ".join(sql_parts)
 
-        rows = self.local_db.rows_where(sql, params)
+        rows = list(self.local_db.rows_where(sql, params))
 
         versions = [
             int(row["cal_version"])

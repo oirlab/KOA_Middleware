@@ -62,7 +62,7 @@ class CalibrationSelector:
         -------
         result : dict | None
             The selected calibration metadata dictionary.
-            Returns `None` if no suitable calibration is found, even after fallback.
+            Returns ``None`` if no suitable calibration is found, even after fallback.
         """
         result = self._select(input, db)
         if result is None:
@@ -73,10 +73,10 @@ class CalibrationSelector:
         """
         Internal method to perform the core calibration selection logic.
 
-        This method first retrieves a set of candidate calibrations using `get_candidates`
-        and then selects the best one (or ones) from these candidates using `select_best`.
+        This method first retrieves a set of candidate calibrations using ``get_candidates``
+        and then selects the best one (or ones) from these candidates using ``select_best``.
         Subclasses can override this method to implement custom selection workflows,
-        but it's often more appropriate to override `get_candidates` or `select_best`.
+        but it's often more appropriate to override ``get_candidates`` or ``select_best``.
 
         Parameters
         ----------
@@ -84,7 +84,7 @@ class CalibrationSelector:
             The input object for which a calibration is to be selected.
             The exact type depends on the specific selector implementation.
         db : LocalCalibrationDB
-            The database instance for querying. 
+            The database instance for querying.
 
         Returns
         -------
@@ -126,7 +126,7 @@ class CalibrationSelector:
             The input object for which a calibration is to be selected.
             The exact type depends on the specific selector implementation.
         candidates : list[dict] | dict
-            Candidate calibrations returned from `get_candidates()`.
+            Candidate calibrations returned from ``get_candidates()``.
         
         Returns
         -------

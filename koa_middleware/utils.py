@@ -104,10 +104,10 @@ def generate_koa_filehandle(
         ``/{instrument_name}/YYYY/YYMMDD/{koa_id}``
         
     where:
-        - `instrument_name` is the instrument name.
-        - `YYYY` is the 4-digit year of the observation.
-        - `YYMMDD` is the date of the observation in year-month-day format.
-        - `koa_id` is the KOA ID (same as the filename for HISPEC and PARVI).
+        - ``instrument_name`` is the instrument name.
+        - ``YYYY`` is the 4-digit year of the observation.
+        - ``YYMMDD`` is the date of the observation in year-month-day format.
+        - ``koa_id`` is the KOA ID (same as the filename for HISPEC and PARVI).
 
     Parameters
     ----------
