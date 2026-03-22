@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import re
 import os
 import hashlib
@@ -104,10 +104,10 @@ def generate_koa_filehandle(
         ``/{instrument_name}/YYYY/YYMMDD/{koa_id}``
         
     where:
-        - `instrument_name` is the instrument name.
-        - `YYYY` is the 4-digit year of the observation.
-        - `YYMMDD` is the date of the observation in year-month-day format.
-        - `koa_id` is the KOA ID (same as the filename for HISPEC and PARVI).
+        - ``instrument_name`` is the instrument name.
+        - ``YYYY`` is the 4-digit year of the observation.
+        - ``YYMMDD`` is the date of the observation in year-month-day format.
+        - ``koa_id`` is the KOA ID (same as the filename for HISPEC and PARVI).
 
     Parameters
     ----------
@@ -168,3 +168,63 @@ def postgres_http_date_to_iso(date_str: str) -> str:
 
     # Return exactly millisecond precision, no timezone
     return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}"
+
+_MJD_UNIX_OFFSET = 40587.0
+_SECONDS_PER_DAY = 86400.0
+
+def isot_to_mjd(isot : str) -> float:
+    """
+    Convert an ISO 8601 datetime string to Modified Julian Date (MJD).
+
+    Parameters
+    ----------
+    isot : str
+        The input datetime string in ISO 8601 format.
+
+    Returns
+    -------
+    float
+        The corresponding Modified Julian Date (MJD).
+    """
+    dt = datetime.fromisoformat(isot)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.timestamp() / _SECONDS_PER_DAY + _MJD_UNIX_OFFSET
+
+
+def mjd_to_isot_ms(mjd : float) -> str:
+    """
+    Convert Modified Julian Date (MJD) to an ISO 8601 datetime string.
+
+    Parameters
+    ----------
+    mjd : float
+        The input Modified Julian Date (MJD).
+
+    Returns
+    -------
+    str
+        The corresponding datetime string in ISO 8601 format.
+    """
+    # Convert MJD -> seconds since Unix epoch, then format
+    seconds = (mjd - _MJD_UNIX_OFFSET) * _SECONDS_PER_DAY
+    dt = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=seconds)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+
+def datetime_to_isot_ms(dt : datetime) -> str:
+    """
+    Convert a datetime object to an ISO 8601 string with millisecond precision.
+
+    Parameters
+    ----------
+    dt : datetime
+        The input datetime object.
+
+    Returns
+    -------
+    str
+        The corresponding datetime string in ISO 8601 format with millisecond precision.
+    """
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]

@@ -44,23 +44,29 @@ def download_koa(
     # url
     url = getkoa_url + koa_filename
 
+    logger.info(f"Downloading {koa_filename!r} -> {filename_local!r}")
+
     # HTTP Request
     response = requests.get(url, stream=True, cookies=cookies)
 
     if response.status_code != 200:
-        logger.error(f"Error downloading {koa_filename}: HTTP {response.status_code}")
-    else:
-        # Get total file size from headers if available
-        total_size = int(response.headers.get('content-length', 0))
+        msg = f"Error downloading {koa_filename}: HTTP {response.status_code}"
+        logger.error(msg)
+        raise RuntimeError(msg)
 
-        # Save the file with a progress bar
-        with open(filename_local, 'wb') as f, tqdm(
-            total=total_size, unit='B', unit_scale=True, desc=filename_local
-        ) as pbar:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
-                    pbar.update(len(chunk))
+    # Get total file size from headers if available
+    total_size = int(response.headers.get('content-length', 0))
+
+    # Save the file with a progress bar
+    with open(filename_local, 'wb') as f, tqdm(
+        total=total_size, unit='B', unit_scale=True, desc=filename_local
+    ) as pbar:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+                pbar.update(len(chunk))
+
+    logger.info(f"Download complete: {filename_local!r}")
 
     # Return
     return filename_local

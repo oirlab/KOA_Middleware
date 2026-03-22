@@ -1,9 +1,11 @@
 from ..keck_client import KeckObserverAuthClient
-from ..logging_utils import logger
 import requests
 from tqdm import tqdm
 import zipfile
 import os
+
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['RemoteCalibrationDB']
 
@@ -15,7 +17,7 @@ class RemoteCalibrationDB:
     
     The current implementation uses the Keck Observer login system for authentication.
     Eventually, this will be replaced with the appropriate client for accessing KOA.
-    The URL `_KECK_CALIBRATIONS_URL` will also be replaced with the appropriate KOA URL.
+    The URL ``_KECK_CALIBRATIONS_URL`` will also be replaced with the appropriate KOA URL.
     """
 
     def __init__(self, instrument_name: str):
@@ -30,72 +32,10 @@ class RemoteCalibrationDB:
         self.instrument_name = instrument_name.lower()
         self.auth_client = KeckObserverAuthClient()
         self.calibrations_url = os.environ.get('KOA_CALIBRATIONS_URL', _KECK_CALIBRATIONS_URL)
-    
-    #######################
-    #### DOWNLOAD CALS ####
-    #######################
-
-    # def download_calibration(
-    #     self,
-    #     cal_id: str,
-    #     output_dir: str,
-    #     output_path: str | None = None,
-    # ) -> str:
-    #     os.makedirs(output_dir, exist_ok=True)
-
-    #     route = f"{self.calibrations_url}/{self.instrument_name}/download"
-    #     r = requests.get(
-    #         route,
-    #         params={"cal_id": cal_id},
-    #         cookies=self.auth_client.cookies
-    #     )
-
-    #     if r.status_code != 200:
-    #         msg = f"Failed to download calibration {cal_id}: {r.status_code} {r.text}"
-    #         logger.error(msg)
-    #         raise RuntimeError(msg)
-
-    #     # Save zip to temporary location
-    #     temp_zip = os.path.join(output_dir, f"{cal_id}.zip")
-    #     with open(temp_zip, "wb") as f:
-    #         f.write(r.content)
-
-    #     # Extract and validate zip
-    #     try:
-    #         with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
-    #             extracted_files = zip_ref.namelist()
-                
-    #             if not extracted_files:
-    #                 msg = f"Zip archive for calibration {cal_id} is empty"
-    #                 logger.error(msg)
-    #                 raise RuntimeError(msg)
-                
-    #             filename_in_zip = next(
-    #                 (f for f in extracted_files if not f.endswith('/')),
-    #                 extracted_files[0]
-    #             )
-                
-    #             zip_ref.extractall(output_dir)
-                
-    #         # Determine final output path
-    #         if output_path is None:
-    #             output_path = os.path.join(output_dir, filename_in_zip)
-            
-    #         if not os.path.exists(output_path):
-    #             msg = f"Extracted calibration file not found at {output_path}"
-    #             logger.error(msg)
-    #             raise RuntimeError(msg)
-            
-    #         logger.info(f"Successfully downloaded calibration {cal_id} to {output_path}")
-    #         return output_path
-            
-    #     except zipfile.BadZipFile as e:
-    #         logger.error(f"Downloaded file {temp_zip} is not a valid zip archive: {e}")
-    #         raise RuntimeError(f"Invalid zip archive for calibration {cal_id}") from e
-    #     finally:
-    #         # Always delete the temp zip file
-    #         if os.path.exists(temp_zip):
-    #             os.remove(temp_zip)
+        logger.info(
+            f"RemoteCalibrationDB initialized: instrument={self.instrument_name!r}, "
+            f"url={self.calibrations_url!r}"
+        )
 
     def download_calibration_file(
         self,
@@ -203,6 +143,7 @@ class RemoteCalibrationDB:
             The JSON response containing the queried metadata.
         """
         route = f"{self.calibrations_url}/{self.instrument_name.lower()}/query"
+        logger.info(f"Querying remote DB at {route!r} with params={kwargs}")
         response = requests.get(route, params=kwargs, cookies=self.auth_client.cookies)
         if response.status_code != 200:
             msg = f"Failed to query metadata: {response.status_code} {response.text}"
@@ -210,7 +151,10 @@ class RemoteCalibrationDB:
             raise RuntimeError(msg)
         out = response.json()
         if isinstance(out, dict) and out.get('message') == 'No matching calibrations found.':
+            logger.info("Remote DB query returned 0 results.")
             return []
+        result_count = len(out) if isinstance(out, list) else 1
+        logger.info(f"Remote DB query returned {result_count} result(s).")
         return out
 
     def get_last_updated(self) -> str:

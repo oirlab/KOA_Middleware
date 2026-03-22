@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
 @runtime_checkable
-class SupportsCalibrationIO(Protocol):
+class SupportsCalibrationModelIO(Protocol):
     """
     Structural interface for DataModel-like objects that can be written to disk
     and converted into a calibration database record.
@@ -26,7 +26,7 @@ class SupportsCalibrationIO(Protocol):
         output_path : str, optional
             Full file path to save the file to. If None, saves to the current directory.
         output_dir : str, optional
-            Directory to save the file to. Ignored if `output_path` is provided.
+            Directory to save the file to. Ignored if ``output_path`` is provided.
 
         Returns
         -------

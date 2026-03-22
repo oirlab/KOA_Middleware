@@ -73,10 +73,15 @@ class KeckObserverAuthClient:
         """
         r = self.session.get(f"{self.login_url}/userinfo/odb-cookie")
         if r.status_code != 200:
+            logger.info(f"Session validation returned HTTP {r.status_code}; re-login required.")
             return False
         try:
-            return r.json().get("Id") is not None
+            valid = r.json().get("Id") is not None
+            if not valid:
+                logger.info("Session validation: no observer ID found; re-login required.")
+            return valid
         except Exception:
+            logger.info("Session validation: failed to parse response; re-login required.")
             return False
 
     def _perform_login(self) -> tuple[str, dict]:
@@ -128,7 +133,7 @@ class KeckObserverAuthClient:
 
         u = requests.get(f"{self.login_url}/userinfo/odb-cookie", cookies=uid_cookie)
         assert u.status_code == 200, f"{u} not successful"
-        logger.info(f"User info request successful: {u.json()}")
+        logger.info(f"User info request successful: observer ID={u.json().get('Id')!r}")
 
         observer_id = str(u.json()["Id"])
         encoded = b64encode(observer_id.encode()).decode()
@@ -176,6 +181,7 @@ class KeckObserverAuthClient:
         try:
             data = json.loads(_COOKIE_PATH.read_text())
         except Exception:
+            logger.warning(f"Cookie file at {_COOKIE_PATH} exists but could not be parsed; will re-authenticate.")
             return False
         for k, v in data.items():
             self.session.cookies.set(k, v)
