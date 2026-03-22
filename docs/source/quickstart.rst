@@ -39,13 +39,13 @@ Additional parameters can be provided to :py:class:`~koa_middleware.store.Calibr
 - **KOA_CALIBRATION_CACHE** (Required)
   Path to cached calibrations directory.
 
-- **KOA_LOCAL_DATABASE_FILENAME** (Optional)
+- **KOA_LOCAL_CALIBRATION_DATABASE_FILENAME** (Optional)
   Local SQLite database filename. Default: ``<instrument_name>_calibrations.db``
 
 - **KOA_USE_CACHED_CALIBRATIONS** (Optional)
   Use cached files ('true' or 'false'). Default: 'true'.
 
-- **KOA_LOCAL_DATABASE_TABLE_NAME** (Optional)
+- **KOA_LOCAL_CALIBRATION_DATABASE_TABLE_NAME** (Optional)
   Local database table name. Default: ``<instrument_name>``
 
 - **KOA_CALIBRATIONS_URL** (Optional)
@@ -61,38 +61,39 @@ In the case of two instruments HISPEC and Liger, the calibration cache directory
 
 .. code-block:: text
 
-    /koa_calibration_cache/
-        ├── calibrations/
-        |   ├── hispec/
-        │   ├────── hispec_cal1.fits
-        │   ├────── hispec_cal2.fits
-        │   └── ...
-        |   ├── liger/
-        │   ├────── liger_cal1.fits
-        │   ├────── liger_cal2.fits
-        │   └── ...
-        └── database/
-            └── hispec_calibrations.db
-            └── liger_calibrations.db
+    koa_calibration_cache/
+    ├── calibrations/
+    │   ├── hispec/
+    │   │   ├── hispec_cal1.fits
+    │   │   ├── hispec_cal2.fits
+    │   │   └── ...
+    │   ├── liger/
+    │   │   ├── liger_cal1.fits
+    │   │   ├── liger_cal2.fits
+    │   │   └── ...
+    ├── database/
+    │   ├── hispec_calibrations.db
+    │   └── liger_calibrations.db
 
 The ``calibrations`` and ``database`` subdirectories are created automatically. A SQLite database file is created in the ``database`` subdirectory when the store is initialized if the specified database file does not already exist. Calibration files are stored in subdirectories named after the instrument within the ``calibrations`` directory and is also created automatically.
 
 Calibration Data Structure
 --------------------------
 
-In python, calibrations are stored as dictionaries with at least the following entries. The key ``id`` serves as the primary key and must be unique for a given table.
+In python, calibrations are stored as dictionaries with at least the following entries.
+
+Below are the required fields for a calibration record. The key ``id`` serves as the primary key and must be unique for a given table. Additional fields can be added as needed, but these are the minimum required for the store to function properly.
 
 .. code-block:: python
 
     calibration_meta = {
-        'instrument_name' : 'HISPEC',                  # Instrument name (string).
-        'id': 'b6fa2d86-45cf-5c6c-bf9b-7b8f7d0c3b9a', # Unique identifier (string). PRIMARY KEY.
-        'filename': 'calibration_file.fits',          # Filename (string).
-        'cal_type': 'dark',                           # Calibration type ('dark', 'flat', etc.)
-        'datetime_obs': '2024-09-24T12:00:00.000',    # Observation datetime in ISO string. YYYY-MM-DDTHH:MM:SS.sss
+        'id': '123e4567-e89b-12d3-a456-426614174000',  # A unique UUID4 identifier for the calibration file. This is the primary DB key.
+        'filename': 'calibration_file.fits',              # The filename of the calibration file.
+        'datetime_obs': '2024-09-24T12:00:00.000',       # The date and time of observation for the calibration file in ISOT format.
+        'cal_type': 'dark',                               # The type of calibration (e.g., "flat", "dark", "arc").
+        'origin': 'LOCAL'                                 # The origin of the calibration (e.g., "flat", "Keck").
     }
 
-Additional fields can be included as needed.
 
 Examples
 ========
@@ -100,7 +101,7 @@ Examples
 Initialize the Calibration Store
 --------------------------------
 
-Create a ``CalibrationStore`` instance:
+Create a `CalibrationStore` instance:
 
 .. code-block:: python
 
@@ -279,4 +280,8 @@ Calibration selectors implement the logic to choose the best calibration from th
 Next Steps
 ==========
 
-- For complete API reference, see :py:class:`koa_middleware.store.CalibrationStore`, :py:class:`koa_middleware.database.local_database.LocalCalibrationDB`, and :py:class:`koa_middleware.database.remote_database.RemoteCalibrationDB`
+For complete API reference, see documentation for:
+
+- `CalibrationStore` - This object serves as the main interface.
+- `LocalCalibrationDB` - Object that manages the local SQLite database of calibration metadata.
+- `RemoteCalibrationDB` - Object that manages interactions with the remote KOA calibration database.

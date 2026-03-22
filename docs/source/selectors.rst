@@ -2,7 +2,7 @@
 Calibration Selectors
 =====================
 
-Calibration selectors are Python classes that implement the logic to select a calibration from the local calibration database given input metadata from a DRP (Data Reduction Pipeline). All calibration selectors inherit from :py:class:`~koa_middleware.selector_base.CalibrationSelector`.
+Calibration selectors are Python classes that implement the logic to select a calibration from the local calibration database given input metadata from a DRP (Data Reduction Pipeline). All calibration selectors inherit from `CalibrationSelector`.
 
 The local calibration database uses `sqlite-utils <https://sqlite-utils.datasette.io/>`_, a Python library that provides a convenient interface to SQLite databases. The sqlite-utils `Table <https://sqlite-utils.datasette.io/en/stable/reference.html#sqlite-utils-db-table>`_ (``store.local_db.table``) object provides direct access to sqlite-utils query methods.
 
@@ -18,20 +18,22 @@ The selection process consists of the following three steps. Calling :py:meth:`~
 Defining a Selector
 ===================
 
-To create a custom selector, inherit from :py:class:`~koa_middleware.selector_base.CalibrationSelector` and implement the required method:
+To create a custom selector, inherit from `CalibrationSelector` and implement the required method:
 
 - ``get_candidates(input, db, **kwargs)``: Query the database and return a list of candidate calibration dictionaries that match basic criteria.
 
-``db`` is an instance of :py:class:`~koa_middleware.database.local_database.LocalCalibrationDB`.
+``db`` is an instance of `LocalCalibrationDB`.
 
-See :py:class:`~koa_middleware.selector_base.CalibrationSelector` for more details on optional methods.
+See `CalibrationSelector` for more details on optional methods.
 
 Queries use the sqlite-utils API to interact with the local calibration database. See the `sqlite-utils documentation <https://sqlite-utils.datasette.io/en/stable/python-api.html>`_ for details on available query methods. Below are common query patterns.
 
 Example Selector
 ================
 
-Below is an example selector for selecting dark calibrations:
+Below is an trimmed-down example selector for selecting dark calibrations for HISPEC, which has two spectrographs (BSPEC and RSPEC), each with their own detector.
+
+The column **instrument_era** represents the stability periods of the instrument which might correspond to instrument servicing, etc.
 
 .. code-block:: python
 
@@ -58,19 +60,19 @@ Below is an example selector for selecting dark calibrations:
                 cal_type = :cal_type
                 AND instrument_era = :instrument_era
                 AND spectrograph = :spectrograph
-                AND master_cal = 1
             """
 
             params = {
                 'cal_type': 'dark',
-                'instrument_era': meta.get('drp_version'),
-                'spectrograph': meta.get('spectrograph'),
+                'instrument_era': meta['instrument_era'],
+                'spectrograph': meta['spectrograph'],
             }
 
             # Fetch all matching rows from the database
+            # Order by closest in time to input observation using mjd_start
             rows = list(db.table.rows_where(
                 sql, params,
-                order_by=f"ABS(mjd_start - {meta['mjd_start']})" # Order by closest in time
+                order_by=f"ABS(mjd_start - {meta['mjd_start']})"
             ))
 
             return rows
@@ -78,7 +80,7 @@ Below is an example selector for selecting dark calibrations:
 Using a Selector
 ================
 
-Once you've defined a selector, use it with the :py:class:`~koa_middleware.store.CalibrationStore`:
+Once you've defined a selector, use it with the `CalibrationStore`:
 
 .. code-block:: python
 
@@ -115,7 +117,7 @@ Once you've defined a selector, use it with the :py:class:`~koa_middleware.store
 Query Patterns with sqlite-utils
 =================================
 
-The ``db.table`` object provides access to sqlite-utils methods, and the :py:class:`~koa_middleware.database.local_database.LocalCalibrationDB` class provides additional convenience methods. Here are common query patterns for ``get_candidates``:
+The attribute ``LocalCalibrationDB.table`` provides access to sqlite-utils methods, and the `LocalCalibrationDB` class provides additional convenience methods. Here are common query patterns for ``get_candidates``:
 
 Basic Queries
 -------------
@@ -129,7 +131,7 @@ Basic Queries
     ))
 
     # Query all rows
-    all_rows = list(db.rows)
+    all_rows = list(db.table.rows)
 
     # Query with ordering
     rows = list(db.table.rows_where(
@@ -153,7 +155,7 @@ Conditional Queries
     rows = list(db.table.rows_where(
         """cal_type = :type 
            AND instrument_era = :era 
-           AND datetime_obs > :date""", # Or mjd_start
+           AND datetime_obs > :date""",
         {"type": "dark", "era": "0.0.1", "date": "2024-01-01T00:00:00.000"}
     ))
 

@@ -46,6 +46,9 @@ autodoc_default_options = {
 templates_path = ['_templates']
 exclude_patterns = []
 
+# So that `ClassName` compiles to API links without :py:class:
+default_role = "any"
+
 # Add the custom CSS file
 html_css_files = [
     'custom.css'

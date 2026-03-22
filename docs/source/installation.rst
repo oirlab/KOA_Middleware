@@ -22,7 +22,7 @@ Environment Setup
 
 2.  **Create and activate a virtual environment:**
 
-    Use `uv` to create and manage your virtual environment named `<env_name>` with the desired Python version `<version>`:
+    Use uv to create and manage your virtual environment named ``<env_name>`` with the desired Python version ``<version>``:
 
     .. code-block:: bash
 
