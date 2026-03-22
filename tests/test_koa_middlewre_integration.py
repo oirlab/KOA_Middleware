@@ -1,9 +1,10 @@
 import pytest
-import datetime
+from datetime import datetime, timezone
 import uuid
 from pathlib import Path
 
 from koa_middleware.store import CalibrationStore
+from koa_middleware.utils import datetime_to_isot_ms
 from .test_selectors import _TestDarkSelector
 
 @pytest.fixture
@@ -40,7 +41,7 @@ def test_minimal_koa_middleware_integration(in_memory_calibration_store):
     test_calibration_id = str(uuid.uuid4())
     test_filename = "test_dark_calibration.fits"
     test_mjd_start = 60000.0  # Example MJD
-    test_datetime_obs = datetime.datetime.now().isoformat()
+    test_datetime_obs = datetime_to_isot_ms(datetime.now(timezone.utc))
 
     minimal_cal = {
         "id": test_calibration_id,

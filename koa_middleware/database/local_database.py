@@ -1,9 +1,11 @@
 from typing import Sequence
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlite_utils import Database
 from sqlite_utils.db import NotFoundError
+
+from ..utils import datetime_to_isot_ms
 
 import logging
 logger = logging.getLogger(__name__)
@@ -301,7 +303,7 @@ class LocalCalibrationDB:
                     item[col] = postgres_http_date_to_iso(item[col])
 
         # Use common last updated timestamp for all entries in this batch to ensure consistency
-        last_updated = datetime.now().isoformat(timespec='milliseconds')
+        last_updated = datetime_to_isot_ms(datetime.now(timezone.utc))
 
         for item in items:
             if not item.get("last_updated"):
