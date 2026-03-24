@@ -779,7 +779,7 @@ class CalibrationStore:
             logger.error(msg)
             raise ValueError(msg)
 
-    def sync_records_to_remote(self, cals, mode : str = 'id') -> list[dict]:
+    def sync_records_from_remote(self, cals, mode : str = 'id') -> list[dict]:
         """
         Synchronizes the local database with the remote database.
 
