@@ -1,11 +1,14 @@
 import os
 import shutil
 from typing import Sequence
+from koa_middleware.utils import datetime_to_isot_ms
 
 from .utils import is_valid_uuid, generate_md5_file
 from .selector_base import CalibrationSelector
 from .database import LocalCalibrationDB, RemoteCalibrationDB
 from .datamodel_protocol import SupportsCalibrationModelIO
+
+from datetime import datetime, timezone
 
 from .utils import get_env_var_bool
 
@@ -274,17 +277,13 @@ class CalibrationStore:
             return None, None
 
         # Prepare calibration record with version
-        cal_record = self._prepare_cal_record(cal, origin=origin, new_version=new_version)
+        cal_record = self._prepare_cal_record(cal, origin=origin)
 
-        # Finalize the datamodel
-        self._finalize_cal_model(cal, cal_version=cal_record.get('cal_version'), origin=origin)
+        # Save calibration file to local cache
+        local_filepath = self.save_calibration_file(cal, cal_record=cal_record)
 
-        # Save to local cache
-        local_filepath = cal.save(output_dir=self.data_dir)
-        logger.info(f"Saved calibration with ID={cal_record.get('id')} to {local_filepath}.")
-
-        # Finalize with MD5 after saving file to disk
-        self._finalize_cal_record(cal_record)
+        # Finalize calibration record with file info (e.g. MD5 checksum)
+        cal_record = self._finalize_cal_record(cal_record, local_filepath)
 
         # Add new record to local DB
         cal_record_added = self.local_db.add(cal_record)
@@ -295,20 +294,26 @@ class CalibrationStore:
 
         return local_filepath, cal_record_added
     
-    def _finalize_cal_model(self, cal: SupportsCalibrationModelIO, cal_version : str, origin: str | None) -> None:
+    def save_calibration_file(self, cal: SupportsCalibrationModelIO, cal_record : dict | None = None) -> str:
         """
-        Finalize a calibration model before saving to disk.
+        Saves a calibration file to the local cache directory.
 
         Parameters
         ----------
         cal : SupportsCalibrationModelIO
-            The calibration model to finalize.
+            The calibration data model instance to save.
+        cal_record : dict | None
+            The corresponding record.
 
         Returns
         -------
-        None
+        str
+            The absolute local file path where the calibration file was saved.
         """
-        return cal
+        local_filepath = cal.save(output_dir=self.data_dir)
+        logger.info(f"Saved calibration with ID={cal_record.get('id')} to {local_filepath}.")
+
+        return local_filepath
 
     def record_from(self, cal : dict | SupportsCalibrationModelIO) -> dict:
         """
@@ -342,29 +347,32 @@ class CalibrationStore:
         self,
         cal : dict | SupportsCalibrationModelIO,
         origin: str | None = None,
-        new_version: bool = False,
+        version : bool = True,
+        last_updated : bool = True
     ) -> dict:
         """
         Extract and version a calibration's metadata record before saving to disk.
         """
         cal_record = self.record_from(cal)
-        if new_version:
+        if version:
             cal_record['cal_version'] = self.generate_calibration_version(cal_record, origin=origin)
+            cal_record['origin'] = origin
+        if last_updated:
+            cal_record['last_updated'] = datetime_to_isot_ms(datetime.now(timezone.utc))
         return cal_record
 
     def _finalize_cal_record(
         self,
         cal_record: dict,
+        local_filepath: str
     ) -> dict:
         """
         Finalize a calibration record after the file has been saved to disk.
         Computes and adds the MD5 checksum.
         """
-        local_filepath = self._get_local_filepath(cal_record)
+        cal_record['filename'] = os.path.basename(local_filepath)
         cal_record['file_md5'] = generate_md5_file(local_filepath)
         return cal_record
-    
-
 
     # Get a calibration and download if not cached
     def get_calibration(self, cal: dict | str) -> tuple[str, dict]:
@@ -518,7 +526,7 @@ class CalibrationStore:
         mode : str
             The mode to check the cache. Can be one of:
                 - 'id' : Check by calibration ID (cal_id), the primary key in the database.
-                - 'version-family' : Check by the version family (cal_type, datetime_obs, master_cal, spectrograph) + version (cal_version).
+                - 'version-family' : Check by the version family values.
                 - 'md5' : Check by the MD5 checksum of the calibration file.
 
         Returns
@@ -531,18 +539,20 @@ class CalibrationStore:
         if len(self.local_db) == 0:
             return None
 
+        # What determines if two cals are the same
         mode = mode.lower()
 
         # Check by ID
         if mode == 'id':
             return self._calibration_record_in_cache_id(cal)
-        # Check by ID
+        
+        # Check by version family
         if mode == 'version-family':
             return self._calibration_record_in_cache_version_family(cal)
         if mode == 'md5':
             return self._calibration_record_in_cache_md5(cal)
         raise ValueError(
-            f"Invalid mode: {mode}. Must be one of 'id', 'family+version', or 'md5'."
+            f"Invalid mode: {mode}. Must be one of 'id', 'version-family', or 'md5'."
         )
     
     def _calibration_record_in_cache_id(self, calibration: dict | str | SupportsCalibrationModelIO) -> dict | None:
@@ -975,7 +985,7 @@ class CalibrationStore:
     #### Versioning ####
     def generate_calibration_version(
         self,
-        calibration : dict,
+        cal : dict | SupportsCalibrationModelIO,
         origin : str | None = None
     ) -> str:
         """
@@ -984,7 +994,7 @@ class CalibrationStore:
 
         Parameters
         ----------
-        calibration : dict
+        cal : dict | SupportsCalibrationModelIO
             The calibration record for which to generate the version. Must contain the necessary metadata fields to determine its version family (e.g. cal_type, datetime_obs, master_cal, spectrograph).
         origin : str | None, optional
             The origin to use for generating the version. If None, the origin
@@ -1001,23 +1011,27 @@ class CalibrationStore:
             origin = origin.upper()
         else:
             if origin is None:
-                origin = calibration.get('origin') or self.origin
+                origin = cal.get('origin') or self.origin
 
             assert origin is not None, "Origin must be specified either in the input calibration metadata or as an argument to this function."
             origin = origin.upper()
 
-        calibration['origin'] = origin
-
-        cal_version = self._get_next_calibration_version(calibration)
+        cal_version = self._get_next_calibration_version(cal, origin=origin)
 
         MAX_VERSION = 999
         if int(cal_version) > MAX_VERSION:
             raise ValueError(f"Invalid calibration version: {cal_version}")
 
-        logger.info(
-            f"Generated calibration version {cal_version!r} for "
-            f"{calibration.get('filename')!r} (origin={origin!r})."
-        )
+        if isinstance(cal, SupportsCalibrationModelIO):
+            logger.info(
+                f"Generated calibration version {cal_version!r} (origin={origin!r}) for {cal}"
+            )
+        else:
+            logger.info(
+                f"Generated calibration version {cal_version!r} (origin={origin!r}) for "
+                f"{cal.get('filename')!r}."
+            )
+
         return cal_version
 
     def get_version_family_column_names(self, cal_type : str):
@@ -1081,7 +1095,7 @@ class CalibrationStore:
             return "001"
         
         if isinstance(cal, SupportsCalibrationModelIO):
-            cal_record = cal.to_record()
+            cal_record = self.record_from(cal)
         elif isinstance(cal, dict):
             cal_record = cal
         else:
