@@ -139,7 +139,7 @@ def test_sync_local_db_from_cached_files(tmp_path):
         store.local_db._reset(confirm=True)
 
         # Populate local DB from existing cache
-        store.sync_records_from_cached_files(models, origin='LOCAL')
+        store.sync_records_from_cached_files(models)
 
         # Verify entries in local DB
         all_rows = store.local_db.query()

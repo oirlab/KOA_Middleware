@@ -940,7 +940,6 @@ class CalibrationStore:
     def sync_records_from_cached_files(
         self,
         cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO],
-        origin : str | None = None
     ) -> None:
         """
         Populates the local database from existing cached calibration files.
@@ -955,18 +954,17 @@ class CalibrationStore:
         -----
         This method may be removed in the future if not found useful.
         """
-        if origin is None:
-            origin = self.origin
-        if isinstance(cals, (dict, SupportsCalibrationModelIO)):
+        if isinstance(cals, SupportsCalibrationModelIO):
             cals = [cals]
         cal_records = []
         for cal in cals:
-            if isinstance(cal, SupportsCalibrationModelIO):
-                cal_records.append(self._prepare_cal_record(cal, origin=origin))
-            else:
-                cal_records.append(cal)
+            cal_records.append(self._prepare_cal_record(cal, origin='LOCAL'))
         
-        self.local_db.add(cal_records)
+        # Add new records
+        cal_records_added = self.local_db.add(cal_records)
+
+        # Return new new records
+        return cal_records_added
 
     #### Context Manager ####
     def close(self):
