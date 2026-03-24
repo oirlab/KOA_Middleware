@@ -1,0 +1,14 @@
+﻿koa\_middleware.database
+========================
+
+.. automodule:: koa_middleware.database
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   local_database
+   remote_database
