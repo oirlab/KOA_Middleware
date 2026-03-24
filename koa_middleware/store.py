@@ -247,8 +247,6 @@ class CalibrationStore:
         """
         Registers a calibration to the local cache and metadata database.
 
-        TODO: Check if file exists? Behavior of model.save is undefined and may have unwanted side effects.
-
         Parameters
         ----------
         cal : SupportsCalibrationModelIO
@@ -941,7 +939,8 @@ class CalibrationStore:
     
     def sync_records_from_cached_files(
         self,
-        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO]
+        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO],
+        origin : str | None = None
     ) -> None:
         """
         Populates the local database from existing cached calibration files.
@@ -956,12 +955,14 @@ class CalibrationStore:
         -----
         This method may be removed in the future if not found useful.
         """
+        if origin is None:
+            origin = self.origin
         if isinstance(cals, (dict, SupportsCalibrationModelIO)):
             cals = [cals]
         cal_records = []
         for cal in cals:
             if isinstance(cal, SupportsCalibrationModelIO):
-                cal_records.append(cal.to_record())
+                cal_records.append(self._prepare_cal_record(cal, origin=origin))
             else:
                 cal_records.append(cal)
         
@@ -1183,13 +1184,13 @@ class CalibrationStore:
             if os.path.isdir(self.data_dir):
                 shutil.rmtree(self.data_dir)
             os.makedirs(self.data_dir, exist_ok=True)
-            
 
     #### Misc. ####
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(\n"
             f"  instrument_name={self.instrument_name!r},\n"
+            f"  origin={self.origin!r},\n"
             f"  local_db={self.local_db!r},\n"
             f"  remote_db={self.remote_db!r}\n"
             f")"
