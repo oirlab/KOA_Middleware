@@ -247,8 +247,6 @@ class CalibrationStore:
         """
         Registers a calibration to the local cache and metadata database.
 
-        TODO: Check if file exists? Behavior of model.save is undefined and may have unwanted side effects.
-
         Parameters
         ----------
         cal : SupportsCalibrationModelIO
@@ -941,14 +939,14 @@ class CalibrationStore:
     
     def sync_records_from_cached_files(
         self,
-        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO]
+        cals : SupportsCalibrationModelIO | Sequence[SupportsCalibrationModelIO],
     ) -> None:
         """
         Populates the local database from existing cached calibration files.
 
         Parameters
         ----------
-        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO]
+        cals : SupportsCalibrationModelIO | Sequence[SupportsCalibrationModelIO]
             A single calibration metadata dictionary or a data model instance,
             or a list of these.
 
@@ -956,16 +954,17 @@ class CalibrationStore:
         -----
         This method may be removed in the future if not found useful.
         """
-        if isinstance(cals, (dict, SupportsCalibrationModelIO)):
+        if isinstance(cals, SupportsCalibrationModelIO):
             cals = [cals]
         cal_records = []
         for cal in cals:
-            if isinstance(cal, SupportsCalibrationModelIO):
-                cal_records.append(cal.to_record())
-            else:
-                cal_records.append(cal)
+            cal_records.append(self._prepare_cal_record(cal, origin='LOCAL'))
         
-        self.local_db.add(cal_records)
+        # Add new records
+        cal_records_added = self.local_db.add(cal_records)
+
+        # Return new new records
+        return cal_records_added
 
     #### Context Manager ####
     def close(self):
@@ -1183,13 +1182,13 @@ class CalibrationStore:
             if os.path.isdir(self.data_dir):
                 shutil.rmtree(self.data_dir)
             os.makedirs(self.data_dir, exist_ok=True)
-            
 
     #### Misc. ####
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(\n"
             f"  instrument_name={self.instrument_name!r},\n"
+            f"  origin={self.origin!r},\n"
             f"  local_db={self.local_db!r},\n"
             f"  remote_db={self.remote_db!r}\n"
             f")"
