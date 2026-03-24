@@ -939,14 +939,14 @@ class CalibrationStore:
     
     def sync_records_from_cached_files(
         self,
-        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO],
+        cals : SupportsCalibrationModelIO | Sequence[SupportsCalibrationModelIO],
     ) -> None:
         """
         Populates the local database from existing cached calibration files.
 
         Parameters
         ----------
-        cals : dict | SupportsCalibrationModelIO | Sequence[dict | SupportsCalibrationModelIO]
+        cals : SupportsCalibrationModelIO | Sequence[SupportsCalibrationModelIO]
             A single calibration metadata dictionary or a data model instance,
             or a list of these.
 
