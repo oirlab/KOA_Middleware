@@ -276,6 +276,7 @@ class CalibrationStore:
 
         # Prepare calibration record with version
         cal_record = self._prepare_cal_record(cal, origin=origin)
+        origin = cal_record['origin']
 
         # Save calibration file to local cache
         local_filepath = self.save_calibration_file(cal, cal_record=cal_record)
@@ -353,6 +354,10 @@ class CalibrationStore:
         """
         cal_record = self.record_from(cal)
         if version:
+            if origin is None:
+                origin = self.origin or cal_record.get('origin')
+            if origin is None:
+                raise ValueError(f"Origin must be provided or already set in record for {cal}.")
             cal_record['cal_version'] = self.generate_calibration_version(cal_record, origin=origin)
             cal_record['origin'] = origin
         if last_updated:
@@ -777,7 +782,7 @@ class CalibrationStore:
             logger.error(msg)
             raise ValueError(msg)
 
-    def sync_records_from_remote(self, cals, mode : str = 'id') -> list[dict]:
+    def sync_records_from_remote(self, mode : str = 'id') -> list[dict]:
         """
         Synchronizes the local database with the remote database.
 
