@@ -282,7 +282,7 @@ class CalibrationStore:
         local_filepath = self.save_calibration_file(cal, cal_record=cal_record)
 
         # Finalize calibration record with file info (e.g. MD5 checksum)
-        cal_record = self._finalize_cal_record(cal_record, local_filepath)
+        cal_record = self._finalize_cal_record(cal, cal_record, local_filepath)
 
         # Add new record to local DB
         cal_record_added = self.local_db.add(cal_record)
@@ -366,6 +366,7 @@ class CalibrationStore:
 
     def _finalize_cal_record(
         self,
+        cal : SupportsCalibrationModelIO,
         cal_record: dict,
         local_filepath: str
     ) -> dict:
