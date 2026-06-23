@@ -1,0 +1,12 @@
+﻿koa\_middleware.store
+=====================
+
+.. automodule:: koa_middleware.store
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CalibrationStore
+   
