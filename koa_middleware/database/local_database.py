@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
@@ -6,6 +6,9 @@ from sqlite_utils import Database
 from sqlite_utils.db import NotFoundError
 
 from ..utils import datetime_to_isot_ms
+
+if TYPE_CHECKING:
+    from astropy.table import Table
 
 import logging
 logger = logging.getLogger(__name__)
@@ -426,3 +429,29 @@ class LocalCalibrationDB:
             row[column]
             for row in self.table.rows
         ]
+
+    def to_table(self, rows: list[dict] | None = None) -> "Table":
+        """
+        Export calibration entries to an astropy Table.
+
+        Parameters
+        ----------
+        rows : list[dict], optional
+            Rows to convert, e.g. the output of `query()`. Defaults to all rows in the table.
+
+        Returns
+        -------
+        astropy.table.Table
+            The calibration entries as an astropy Table.
+        """
+        try:
+            from astropy.table import Table
+        except ImportError as e:
+            raise ImportError("astropy is required to use to_table(); install it with `pip install astropy`.") from e
+
+        if rows is None:
+            rows = list(self.rows)
+        # astropy.table.Table can't infer columns from an empty list of rows.
+        if not rows:
+            return Table(names=list(self.table.columns_dict.keys()))
+        return Table(rows=rows)
