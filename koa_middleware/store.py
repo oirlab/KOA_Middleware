@@ -243,6 +243,7 @@ class CalibrationStore:
         cal : SupportsCalibrationModelIO,
         origin : str | None = None,
         new_version : bool = False,
+        override_latest : bool = False,
     ) -> tuple[str, dict]:
         """
         Registers a calibration to the local cache and metadata database.
@@ -255,6 +256,14 @@ class CalibrationStore:
             The origin to register the calibration under.
         new_version : bool, optional
             Whether to generate a new version for this calibration. If False, the method will check if a calibration with the same version family already exists in the cache and skip registration if so. Defaults to False.
+        override_latest : bool, optional
+            If True, replace the latest existing version within this calibration's version
+            family instead of generating a new version. The new file and record reuse the
+            same ``cal_version`` as the current latest version, but keep the incoming
+            calibration's own ``id``. The old cached file and database row are removed. If
+            no existing version is found for the family, this behaves like a normal
+            registration (starting at version "001"). Mutually exclusive with
+            ``new_version``. Defaults to False.
 
         Returns
         -------
@@ -264,25 +273,61 @@ class CalibrationStore:
                 - ``dict``: The calibration metadata dictionary as added to the database.
         """
 
+        if new_version and override_latest:
+            raise ValueError("'new_version' and 'override_latest' are mutually exclusive.")
+
         if self.calibration_record_in_cache(cal, mode='id'):
             msg = f"Calibration already exists in cache: {cal}! Skipping registration."
             logger.warning(msg)
             return None, None
         
-        if not new_version and self.calibration_record_in_cache(cal, mode='version-family'):
+        if not new_version and not override_latest and self.calibration_record_in_cache(cal, mode='version-family'):
             msg = f"Calibration already exists in cache: {cal}! Skipping registration."
             logger.warning(msg)
             return None, None
 
-        # Prepare calibration record with version
-        cal_record = self._prepare_cal_record(cal, origin=origin)
-        origin = cal_record['origin']
+        # Find the latest existing version in this calibration's version family, if overriding
+        latest_record = None
+        if override_latest:
+            existing = self._calibration_record_in_cache_version_family(cal, include_version=False)
+            if existing:
+                latest_record = max(existing, key=lambda r: int(r['cal_version']))
+
+        if latest_record is not None:
+            # Reuse the latest version's cal_version and id instead of generating a new one
+            cal_record = self._prepare_cal_record(cal, origin=origin, version=False)
+            if origin is None:
+                origin = self.origin or cal_record.get('origin') or latest_record.get('origin')
+            assert origin is not None, "Origin must be provided or already set in record for {cal}."
+            cal_record['origin'] = origin.upper()
+            cal_record['cal_version'] = latest_record['cal_version']
+            logger.info(
+                f"Overriding latest calibration version {latest_record['cal_version']!r} "
+                f"(ID={latest_record['id']}) with new data."
+            )
+        else:
+            # Prepare calibration record with version
+            cal_record = self._prepare_cal_record(cal, origin=origin)
+            origin = cal_record['origin']
 
         # Save calibration file to local cache
         local_filepath = self.save_calibration_file(cal, cal_record=cal_record)
 
+        # Remove the previous cached file if overriding and its filename has changed
+        if latest_record is not None:
+            old_filepath = self._get_local_filepath(latest_record)
+            if old_filepath and old_filepath != local_filepath and os.path.isfile(old_filepath):
+                os.remove(old_filepath)
+                logger.info(f"Removed old cached calibration file: {old_filepath}")
+
         # Finalize calibration record with file info (e.g. MD5 checksum)
         cal_record = self._finalize_cal_record(cal, cal_record, local_filepath)
+
+        # Remove the old DB row first, since the new record may share the same 'id'
+        # (LocalCalibrationDB.add() does not upsert on primary key conflicts) or a
+        # different one (in which case the old row would otherwise be left behind).
+        if latest_record is not None:
+            self.local_db.delete(latest_record['id'])
 
         # Add new record to local DB
         cal_record_added = self.local_db.add(cal_record)

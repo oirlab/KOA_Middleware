@@ -214,3 +214,64 @@ def test_calibration_versioning(tmp_path):
         )
         next_version = store._get_next_calibration_version(new_flat_model, origin='LOCAL')
         assert next_version == "001", f"Expected version to reset to '001' for new family, but got {next_version}"
+
+
+def test_register_calibration_override_latest(tmp_path):
+    cache_dir = str(tmp_path)
+
+    dt_obs = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+
+    with MyCalibrationStore(
+        instrument_name="test_instrument",
+        cache_dir=cache_dir,
+        local_database_filename=":memory:",
+        connect_remote=False
+    ) as store:
+
+        # Ensure clean DB state
+        store.local_db._reset(confirm=True)
+
+        # Register the initial version
+        first_model = CalModel(cal_type="dark", datetime_obs=dt_obs)
+        first_filepath, first_record = store.register_calibration(first_model, origin='LOCAL')
+        assert os.path.isfile(first_filepath)
+        assert first_record["cal_version"] == "001"
+        assert len(store.local_db) == 1
+
+        # Registering a normal calibration in the same version family without new_version
+        # should be skipped (no-op), since one already exists.
+        skip_model = CalModel(cal_type="dark", datetime_obs=dt_obs)
+        skip_filepath, skip_record = store.register_calibration(skip_model, origin='LOCAL')
+        assert skip_filepath is None and skip_record is None
+        assert len(store.local_db) == 1
+
+        # new_version and override_latest are mutually exclusive
+        try:
+            store.register_calibration(skip_model, origin='LOCAL', new_version=True, override_latest=True)
+            assert False, "Expected ValueError for mutually exclusive arguments"
+        except ValueError:
+            pass
+
+        # Override the latest version with new data instead of bumping the version
+        override_model = CalModel(cal_type="dark", datetime_obs=dt_obs)
+        original_override_id = override_model.meta["id"]
+        override_filepath, override_record = store.register_calibration(
+            override_model, origin='LOCAL', override_latest=True
+        )
+        assert os.path.isfile(override_filepath)
+        # Still only a single entry in the version family, version unchanged
+        assert len(store.local_db) == 1
+        assert override_record["cal_version"] == "001"
+        # The overridden record keeps the incoming model's own ID, not the previous version's ID
+        assert override_record["id"] == original_override_id
+        assert override_record["id"] != first_record["id"]
+
+        # Overriding again with no prior version in a fresh family behaves like a normal registration
+        new_family_model = CalModel(cal_type="bias", datetime_obs=dt_obs)
+        new_family_filepath, new_family_record = store.register_calibration(
+            new_family_model, origin='LOCAL', override_latest=True
+        )
+        assert os.path.isfile(new_family_filepath)
+        assert new_family_record["cal_version"] == "001"
+        assert new_family_record["id"] == new_family_model.meta["id"]
+        assert len(store.local_db) == 2
