@@ -1,0 +1,12 @@
+﻿koa\_middleware.datamodel\_protocol
+===================================
+
+.. automodule:: koa_middleware.datamodel_protocol
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SupportsCalibrationModelIO
+   
