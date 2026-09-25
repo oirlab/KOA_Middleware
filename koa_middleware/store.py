@@ -17,6 +17,27 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['CalibrationStore']
 
+_DEFAULT_SYNC_INTERVAL_SECONDS = 3600.0
+
+
+def _remote_sync_interval_seconds() -> float:
+    """
+    Minimum time between automatic remote syncs, from ``KOA_CALDB_SYNC_INTERVAL``.
+
+    Units are seconds. ``0`` syncs on every store init; a negative value disables
+    automatic syncing. Defaults to 3600 (one hour).
+    """
+    value = os.getenv('KOA_CALDB_SYNC_INTERVAL')
+    if value is None or value.strip() == '':
+        return _DEFAULT_SYNC_INTERVAL_SECONDS
+    try:
+        return float(value)
+    except ValueError:
+        logger.warning(
+            f"Invalid KOA_CALDB_SYNC_INTERVAL={value!r}; using default of {_DEFAULT_SYNC_INTERVAL_SECONDS} s."
+        )
+        return _DEFAULT_SYNC_INTERVAL_SECONDS
+
 
 class CalibrationStore:
     """
@@ -60,6 +81,8 @@ class CalibrationStore:
 
     - KOA_CALIBRATIONS_URL (Optional) Remote database URL. Default: Keck Observer API URL. Default is “https://www3.keck.hawaii.edu/api/calibrations”, and will be replaced with the appropriate KOA URL in the future.
 
+    - KOA_CALDB_SYNC_INTERVAL (Optional) Minimum number of seconds between automatic syncs from the remote database when ``sync_on_init=None``. ``0`` syncs every time; a negative value disables automatic syncing. Default: 3600.
+
     Examples
     --------
     >>> from koa_middleware import CalibrationStore
@@ -83,7 +106,7 @@ class CalibrationStore:
         connect_remote : bool = True,
         use_cached : bool = None,
         origin : str | None = None,
-        sync_on_init : bool = True,
+        sync_on_init : bool | None = None,
     ):
         """
 
@@ -106,8 +129,11 @@ class CalibrationStore:
             If None, reads from the KOA_USE_CACHED_CALIBRATIONS environment variable (default True).
         origin : str | None, optional
             The origin to register calibrations under and retrieve calibrations for.
-        sync_on_init : bool, optional
-            Whether to automatically synchronize records from the remote database upon initialization. Default is True.
+        sync_on_init : bool | None, optional
+            Whether to automatically synchronize records from the remote database upon initialization.
+            If None (default), syncs only if the last successful sync is older than the
+            KOA_CALDB_SYNC_INTERVAL environment variable (seconds, default 3600). Syncs are
+            logged in the local DB, so the interval is shared across processes.
         """
         # Global control for using cached calibrations
         if use_cached is not None:
@@ -134,8 +160,13 @@ class CalibrationStore:
         else:
             self.remote_db = None
 
-        if sync_on_init and self.remote_db is not None:
-            self.sync_records_from_remote()
+        if self.remote_db is not None:
+            if sync_on_init is None:
+                sync_on_init = self.remote_sync_is_stale()
+                if not sync_on_init:
+                    logger.debug("Skipping remote sync (last sync within KOA_CALDB_SYNC_INTERVAL).")
+            if sync_on_init:
+                self.sync_records_from_remote()
 
     def _init_cache(
         self,
@@ -858,7 +889,43 @@ class CalibrationStore:
             cals = self.local_db.add(cals)
         else:
             logger.info("Local DB is already up to date with remote DB.")
+        self.local_db.log_remote_sync(
+            mode=mode,
+            n_added=len(cals),
+            remote_url=self.remote_db.calibrations_url,
+        )
         return cals
+
+    def get_last_remote_sync_time(self) -> datetime | None:
+        """
+        Get the time of the most recent successful sync from the remote database.
+
+        Returns
+        -------
+        datetime | None
+            The UTC time of the last sync, or None if the local DB has never been synced.
+        """
+        last_sync = self.local_db.get_last_remote_sync()
+        if last_sync is None:
+            return None
+        return datetime.fromisoformat(last_sync).replace(tzinfo=timezone.utc)
+
+    def remote_sync_is_stale(self) -> bool:
+        """
+        Whether the last remote sync is older than ``KOA_CALDB_SYNC_INTERVAL`` seconds.
+
+        Returns
+        -------
+        bool
+            True if a sync is due, False otherwise (always False if the interval is negative).
+        """
+        interval = _remote_sync_interval_seconds()
+        if interval < 0:
+            return False
+        last_sync = self.get_last_remote_sync_time()
+        if last_sync is None:
+            return True
+        return (datetime.now(timezone.utc) - last_sync).total_seconds() >= interval
 
     def get_last_updated(self, source : str | None = None, **kwargs) -> str | None:
         """

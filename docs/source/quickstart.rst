@@ -51,6 +51,9 @@ Additional parameters can be provided to :py:class:`~koa_middleware.store.Calibr
 - **KOA_CALIBRATIONS_URL** (Optional)
   Remote database URL. Default: Keck Observer API URL. Default is "https://www3.keck.hawaii.edu/api/calibrations", and will be replaced with the appropriate KOA URL in the future.
 
+- **KOA_CALDB_SYNC_INTERVAL** (Optional)
+  Minimum number of seconds between automatic syncs of the local database from the remote database when a :py:class:`~koa_middleware.store.CalibrationStore` is created with ``sync_on_init=None`` (the default). ``0`` syncs every time; a negative value disables automatic syncing. Default: ``3600``. Each successful sync is logged in the ``remote_syncs`` table of the local database, so the interval is shared across processes.
+
 - **KOA_CALIBRATIONS_ORIGIN** (Optional)
   The origin to register calibrations under and retrieve calibrations for. If not set, origin must be passed into methods as needed.
 

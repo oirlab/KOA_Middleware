@@ -22,6 +22,17 @@ _MIN_SCHEMA = {
     "filename": str,
 }
 
+# Log of successful syncs from the remote DB (one row per sync), stored alongside
+# the calibration table so the two are always reset together.
+REMOTE_SYNCS_TABLE_NAME = "remote_syncs"
+
+_REMOTE_SYNCS_SCHEMA = {
+    "synced_at": str,
+    "mode": str,
+    "n_added": int,
+    "remote_url": str,
+}
+
 
 class LocalCalibrationDB:
     """
@@ -88,6 +99,60 @@ class LocalCalibrationDB:
             logger.warning("No entries found in the calibration database.")
             return None
         return row[0]
+
+    def get_last_remote_sync(self) -> str | None:
+        """
+        Get the time of the most recent successful sync from the remote database.
+
+        Returns
+        -------
+        str | None
+            The ISO 8601 UTC timestamp of the last sync, or None if never synced.
+        """
+        if not self.remote_syncs_table.exists():
+            return None
+        row = next(
+            self.db.execute(
+                f"SELECT MAX(synced_at) FROM {REMOTE_SYNCS_TABLE_NAME}"
+            ),
+            None,
+        )
+        if row is None:
+            return None
+        return row[0]
+
+    def log_remote_sync(
+        self,
+        mode : str,
+        n_added : int,
+        remote_url : str | None = None,
+    ) -> dict:
+        """
+        Record a successful sync from the remote database.
+
+        Parameters
+        ----------
+        mode : str
+            The sync mode used (e.g. 'id' or 'last_updated').
+        n_added : int
+            The number of records added to the local DB during the sync.
+        remote_url : str | None, optional
+            The URL of the remote database synced from.
+
+        Returns
+        -------
+        dict
+            The row added to the sync log.
+        """
+        row = {
+            "synced_at": datetime_to_isot_ms(datetime.now(timezone.utc)),
+            "mode": mode,
+            "n_added": n_added,
+            "remote_url": remote_url,
+        }
+        with self.db.conn:
+            self.remote_syncs_table.insert(row, columns=_REMOTE_SYNCS_SCHEMA)
+        return row
 
     def custom_query(self, sql: str, params: tuple = ()) -> list[dict]:
         """
@@ -352,7 +417,8 @@ class LocalCalibrationDB:
     def _reset(self, confirm: bool = False):
         """
         Reset the calibration database by dropping and recreating the table.
-        WARNING: This will delete all existing calibration metadata in the DB.
+        WARNING: This will delete all existing calibration metadata in the DB,
+        along with the remote sync log.
         """
         if not confirm:
             logger.warning("Reset not confirmed. To reset the database, call _reset with confirm=True.")
@@ -360,6 +426,9 @@ class LocalCalibrationDB:
         if self.table.exists():
             logger.info(f"Dropping table {self.table_name!r}...")
             self.table.drop()
+        if self.remote_syncs_table.exists():
+            logger.info(f"Dropping table {REMOTE_SYNCS_TABLE_NAME!r}...")
+            self.remote_syncs_table.drop()
         logger.info(f"Recreating table {self.table_name!r} with minimal schema.")
         self.table.create(
             _MIN_SCHEMA,
@@ -377,6 +446,18 @@ class LocalCalibrationDB:
             The table object for the calibration metadata.
         """
         return self.db[self.table_name]
+
+    @property
+    def remote_syncs_table(self):
+        """
+        Returns the table logging syncs from the remote database.
+
+        Returns
+        -------
+        sqlite_utils.db.Table
+            The remote sync log table.
+        """
+        return self.db[REMOTE_SYNCS_TABLE_NAME]
     
     def close(self):
         """
